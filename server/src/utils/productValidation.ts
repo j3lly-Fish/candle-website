@@ -20,9 +20,10 @@ export const validateProductCustomizations = (product: IProduct): { isValid: boo
   }
 
   // Check if at least one option in each category is available
-  const hasAvailableScent = product.customizationOptions.scents.some(scent => scent.available && scent.inStock);
-  const hasAvailableColor = product.customizationOptions.colors.some(color => color.available && color.inStock);
-  const hasAvailableSize = product.customizationOptions.sizes.some(size => size.available && size.inStock);
+  // Note: This assumes customization options are populated with full objects
+  const hasAvailableScent = product.customizationOptions.scents.some((scent: any) => scent.available && scent.inStock);
+  const hasAvailableColor = product.customizationOptions.colors.some((color: any) => color.available && color.inStock);
+  const hasAvailableSize = product.customizationOptions.sizes.some((size: any) => size.available && size.inStock);
 
   if (!hasAvailableScent) {
     return { isValid: false, message: 'Product must have at least one available scent option' };
@@ -53,10 +54,10 @@ export const validateCustomizationCombination = (
   colorId: string,
   sizeId: string
 ): { isValid: boolean; message?: string } => {
-  // Find the selected options
-  const scent = product.customizationOptions.scents.id(scentId);
-  const color = product.customizationOptions.colors.id(colorId);
-  const size = product.customizationOptions.sizes.id(sizeId);
+  // Find the selected options (using find instead of id method)
+  const scent = product.customizationOptions.scents.find((s: any) => s._id?.toString() === scentId);
+  const color = product.customizationOptions.colors.find((c: any) => c._id?.toString() === colorId);
+  const size = product.customizationOptions.sizes.find((s: any) => s._id?.toString() === sizeId);
 
   // Check if all options exist
   if (!scent) {
@@ -71,30 +72,30 @@ export const validateCustomizationCombination = (
     return { isValid: false, message: 'Selected size option does not exist' };
   }
 
-  // Check if all options are available
-  if (!scent.available) {
-    return { isValid: false, message: `The scent "${scent.name}" is not available` };
+  // Check if all options are available (with type assertions)
+  if (!(scent as any)?.available) {
+    return { isValid: false, message: `The scent "${(scent as any)?.name}" is not available` };
   }
 
-  if (!color.available) {
-    return { isValid: false, message: `The color "${color.name}" is not available` };
+  if (!(color as any)?.available) {
+    return { isValid: false, message: `The color "${(color as any)?.name}" is not available` };
   }
 
-  if (!size.available) {
-    return { isValid: false, message: `The size "${size.name}" is not available` };
+  if (!(size as any)?.available) {
+    return { isValid: false, message: `The size "${(size as any)?.name}" is not available` };
   }
 
-  // Check if all options are in stock
-  if (!scent.inStock) {
-    return { isValid: false, message: `The scent "${scent.name}" is out of stock` };
+  // Check if all options are in stock (with type assertions)
+  if (!(scent as any)?.inStock) {
+    return { isValid: false, message: `The scent "${(scent as any)?.name}" is out of stock` };
   }
 
-  if (!color.inStock) {
-    return { isValid: false, message: `The color "${color.name}" is out of stock` };
+  if (!(color as any)?.inStock) {
+    return { isValid: false, message: `The color "${(color as any)?.name}" is out of stock` };
   }
 
-  if (!size.inStock) {
-    return { isValid: false, message: `The size "${size.name}" is out of stock` };
+  if (!(size as any)?.inStock) {
+    return { isValid: false, message: `The size "${(size as any)?.name}" is out of stock` };
   }
 
   // All checks passed
@@ -107,13 +108,14 @@ export const validateCustomizationCombination = (
  * @returns An object containing validation result and error message if any
  */
 export const validateProductInventory = (product: IProduct): { isValid: boolean; message?: string } => {
-  if (product.inventory.quantity < 0) {
+  if (product.inventory < 0) {
     return { isValid: false, message: 'Product inventory quantity cannot be negative' };
   }
 
-  if (product.inventory.lowStockThreshold < 0) {
-    return { isValid: false, message: 'Product low stock threshold cannot be negative' };
-  }
+  // Note: lowStockThreshold is not available in the current inventory model
+  // if (product.inventory.lowStockThreshold < 0) {
+  //   return { isValid: false, message: 'Product low stock threshold cannot be negative' };
+  // }
 
   return { isValid: true };
 };
@@ -128,22 +130,22 @@ export const validateProductPricing = (product: IProduct): { isValid: boolean; m
     return { isValid: false, message: 'Product base price cannot be negative' };
   }
 
-  // Check for negative additional prices in customization options
+  // Check for negative additional prices in customization options (with type assertions)
   for (const scent of product.customizationOptions.scents) {
-    if (scent.additionalPrice < 0) {
-      return { isValid: false, message: `Scent "${scent.name}" has a negative additional price` };
+    if ((scent as any)?.additionalPrice < 0) {
+      return { isValid: false, message: `Scent "${(scent as any)?.name}" has a negative additional price` };
     }
   }
 
   for (const color of product.customizationOptions.colors) {
-    if (color.additionalPrice < 0) {
-      return { isValid: false, message: `Color "${color.name}" has a negative additional price` };
+    if ((color as any)?.additionalPrice < 0) {
+      return { isValid: false, message: `Color "${(color as any)?.name}" has a negative additional price` };
     }
   }
 
   for (const size of product.customizationOptions.sizes) {
-    if (size.additionalPrice < 0) {
-      return { isValid: false, message: `Size "${size.name}" has a negative additional price` };
+    if ((size as any)?.additionalPrice < 0) {
+      return { isValid: false, message: `Size "${(size as any)?.name}" has a negative additional price` };
     }
   }
 

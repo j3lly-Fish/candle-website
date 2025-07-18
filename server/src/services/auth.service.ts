@@ -6,7 +6,7 @@ import User, { IUser } from '../models/User';
 import { AuthError, ValidationError } from '../utils/errors';
 
 // JWT Secret from environment variables
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const JWT_SECRET: string = process.env.JWT_SECRET || 'your-secret-key';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '30d';
 
@@ -53,9 +53,9 @@ export class AuthService {
 
       // Return user data (without password) and tokens
       const userResponse = user.toObject();
-      delete userResponse.password;
+      const { password: _, ...userWithoutPassword } = userResponse;
 
-      return { user: userResponse, token, refreshToken };
+      return { user: userWithoutPassword, token, refreshToken };
     } catch (error) {
       if (error instanceof AuthError || error instanceof ValidationError) {
         throw error;
@@ -99,9 +99,9 @@ export class AuthService {
 
       // Return user data (without password) and tokens
       const userResponse = user.toObject();
-      delete userResponse.password;
+      const { password: _, ...userWithoutPassword } = userResponse;
 
-      return { user: userResponse, token, refreshToken };
+      return { user: userWithoutPassword, token, refreshToken };
     } catch (error) {
       if (error instanceof AuthError) {
         throw error;
@@ -145,9 +145,9 @@ export class AuthService {
 
       // Return user data and new token
       const userResponse = user.toObject();
-      delete userResponse.password;
+      const { password: _, ...userWithoutPassword } = userResponse;
 
-      return { user: userResponse, token };
+      return { user: userWithoutPassword, token };
     } catch (error) {
       if (error instanceof jwt.JsonWebTokenError) {
         throw new AuthError('Invalid or expired token', 401);
@@ -296,7 +296,7 @@ export class AuthService {
 
       // Return user data
       const userResponse = user.toObject();
-      delete userResponse.password;
+      const { password: _, ...userWithoutPassword } = userResponse;
 
       return { 
         message: 'Account has been successfully reactivated',
@@ -350,7 +350,7 @@ export class AuthService {
    * @returns JWT token
    */
   generateToken(user: IUser): string {
-    return jwt.sign(
+    return (jwt.sign as any)(
       {
         userId: user._id,
         email: user.email,
@@ -368,7 +368,7 @@ export class AuthService {
    * @returns JWT refresh token
    */
   generateRefreshToken(user: IUser): string {
-    return jwt.sign(
+    return (jwt.sign as any)(
       {
         userId: user._id,
         email: user.email,

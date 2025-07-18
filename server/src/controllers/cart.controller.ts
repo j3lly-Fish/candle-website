@@ -65,15 +65,17 @@ export const getCart = async (req: Request, res: Response, next: NextFunction) =
       }
     }
     
-    // Populate product details
-    await cart.populate({
-      path: 'items.product',
-      select: 'name images basePrice'
-    });
+    // Populate product details if cart exists
+    if (cart) {
+      await cart.populate({
+        path: 'items.product',
+        select: 'name images basePrice'
+      });
+    }
     
     res.status(200).json({
       success: true,
-      data: cart
+      data: cart || { items: [], totalPrice: 0 }
     });
   } catch (error) {
     next(error);
@@ -109,14 +111,14 @@ export const addItemToCart = async (req: Request, res: Response, next: NextFunct
     }
     
     // Check if product is in stock
-    if (!product.inventory.isInStock) {
+    if (product.inventory <= 0) {
       throw new ValidationError('Product is out of stock', { productId: 'Product is out of stock' });
     }
     
     // Check if requested quantity is available
-    if (product.inventory.quantity < quantity) {
-      throw new ValidationError(`Only ${product.inventory.quantity} items available`, { 
-        quantity: `Only ${product.inventory.quantity} items available` 
+    if (product.inventory < quantity) {
+      throw new ValidationError(`Only ${product.inventory} items available`, { 
+        quantity: `Only ${product.inventory} items available` 
       });
     }
     
@@ -173,18 +175,22 @@ export const addItemToCart = async (req: Request, res: Response, next: NextFunct
     }
     
     // Add item to cart
-    await cart.addItem(
-      {
-        product: new mongoose.Types.ObjectId(productId),
-        quantity,
-        customizations: {
-          scent: scentId ? new mongoose.Types.ObjectId(scentId) : null,
-          color: colorId ? new mongoose.Types.ObjectId(colorId) : null,
-          size: sizeId ? new mongoose.Types.ObjectId(sizeId) : null
-        }
-      },
-      priceResult.price
-    );
+    cart.items.push({
+      product: new mongoose.Types.ObjectId(productId),
+      quantity,
+      price: priceResult.price,
+      customizations: {
+        scent: scentId ? new mongoose.Types.ObjectId(scentId) : null,
+        color: colorId ? new mongoose.Types.ObjectId(colorId) : null,
+        size: sizeId ? new mongoose.Types.ObjectId(sizeId) : null
+      }
+    });
+    
+    // Recalculate total price
+    cart.totalPrice = cart.items.reduce((total, item) => total + (item.price * item.quantity), 0);
+    
+    // Save the cart
+    await cart.save();
     
     // Populate product details
     await cart.populate({
@@ -230,7 +236,7 @@ export const updateCartItem = async (req: Request, res: Response, next: NextFunc
     }
     
     // Find the cart item
-    const cartItem = cart.items.find(item => item._id.toString() === id);
+    const cartItem = cart.items.find(item => item._id && item._id.toString() === id);
     
     if (!cartItem) {
       throw new NotFoundError('Cart item not found');
@@ -244,14 +250,20 @@ export const updateCartItem = async (req: Request, res: Response, next: NextFunc
     }
     
     // Check if requested quantity is available
-    if (product.inventory.quantity < quantity) {
-      throw new ValidationError(`Only ${product.inventory.quantity} items available`, { 
-        quantity: `Only ${product.inventory.quantity} items available` 
+    if (product.inventory < quantity) {
+      throw new ValidationError(`Only ${product.inventory} items available`, { 
+        quantity: `Only ${product.inventory} items available` 
       });
     }
     
     // Update item quantity
-    await cart.updateItemQuantity(id, quantity);
+    cartItem.quantity = quantity;
+    
+    // Recalculate total price
+    cart.totalPrice = cart.items.reduce((total, item) => total + (item.price * item.quantity), 0);
+    
+    // Save the cart
+    await cart.save();
     
     // Populate product details
     await cart.populate({
@@ -291,14 +303,20 @@ export const removeCartItem = async (req: Request, res: Response, next: NextFunc
     }
     
     // Find the cart item
-    const cartItem = cart.items.find(item => item._id.toString() === id);
+    const cartItem = cart.items.find(item => item._id && item._id.toString() === id);
     
     if (!cartItem) {
       throw new NotFoundError('Cart item not found');
     }
     
     // Remove item from cart
-    await cart.removeItem(id);
+    cart.items = cart.items.filter(item => item._id && item._id.toString() !== id);
+    
+    // Recalculate total price
+    cart.totalPrice = cart.items.reduce((total, item) => total + (item.price * item.quantity), 0);
+    
+    // Save the cart
+    await cart.save();
     
     // Populate product details
     await cart.populate({
@@ -352,20 +370,20 @@ export const mergeCart = async (req: Request, res: Response, next: NextFunction)
       // Check if product still exists and is in stock
       const product = await Product.findById(item.product);
       
-      if (!product || !product.inventory.isInStock) {
+      if (!product || product.inventory <= 0) {
         continue; // Skip unavailable products
       }
       
       // Check if requested quantity is available
-      if (product.inventory.quantity < item.quantity) {
+      if (product.inventory < item.quantity) {
         // Adjust quantity to available inventory
-        item.quantity = product.inventory.quantity;
+        item.quantity = product.inventory;
       }
       
       // Extract customization options
-      const scentId = item.customizations.scent ? item.customizations.scent.toString() : null;
-      const colorId = item.customizations.color ? item.customizations.color.toString() : null;
-      const sizeId = item.customizations.size ? item.customizations.size.toString() : null;
+      const scentId = item.customizations.scent ? item.customizations.scent.toString() : undefined;
+      const colorId = item.customizations.color ? item.customizations.color.toString() : undefined;
+      const sizeId = item.customizations.size ? item.customizations.size.toString() : undefined;
       
       // Validate customization combination
       const validationResult = await CustomizationValidator.validateProductCustomizationCombination(
@@ -378,14 +396,12 @@ export const mergeCart = async (req: Request, res: Response, next: NextFunction)
       }
       
       // Add item to user cart
-      await userCart.addItem(
-        {
-          product: item.product,
-          quantity: item.quantity,
-          customizations: item.customizations
-        },
-        item.price
-      );
+      userCart.items.push({
+        product: item.product,
+        quantity: item.quantity,
+        price: item.price,
+        customizations: item.customizations
+      });
     }
     
     // Delete guest cart
@@ -430,7 +446,9 @@ export const clearCart = async (req: Request, res: Response, next: NextFunction)
     }
     
     // Clear cart
-    await cart.clearCart();
+    cart.items = [];
+    cart.totalPrice = 0;
+    await cart.save();
     
     res.status(200).json({
       success: true,

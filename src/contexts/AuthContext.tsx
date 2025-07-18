@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User } from '@/types';
+import { User, Address } from '@/types';
 import { api, API_ENDPOINTS } from '@/lib/api';
 
 // Define the shape of the authentication context
@@ -17,7 +17,7 @@ interface AuthContextType {
   updateProfile: (data: Partial<User>) => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   deleteAccount: (password: string) => Promise<void>;
-  addOrUpdateAddress: (address: any) => Promise<void>;
+  addOrUpdateAddress: (address: Address) => Promise<void>;
   deleteAddress: (addressId: string) => Promise<void>;
   error: string | null;
   clearError: () => void;
@@ -144,8 +144,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         setError('Login failed. Please check your credentials.');
       }
-    } catch (error: any) {
-      setError(error.message || 'Login failed. Please try again.');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Login failed. Please try again.';
+      setError(errorMessage);
       throw error;
     } finally {
       setIsLoading(false);
@@ -172,8 +173,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         setError('Registration failed. Please try again.');
       }
-    } catch (error: any) {
-      setError(error.message || 'Registration failed. Please try again.');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Registration failed. Please try again.';
+      setError(errorMessage);
       throw error;
     } finally {
       setIsLoading(false);
@@ -221,8 +223,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (!response.success) {
         setError('Failed to send password reset email. Please try again.');
       }
-    } catch (error: any) {
-      setError(error.message || 'Failed to send password reset email. Please try again.');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send password reset email. Please try again.';
+      setError(errorMessage);
       throw error;
     } finally {
       setIsLoading(false);
@@ -243,8 +246,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (!response.success) {
         setError('Failed to reset password. Please try again.');
       }
-    } catch (error: any) {
-      setError(error.message || 'Failed to reset password. Please try again.');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to reset password. Please try again.';
+      setError(errorMessage);
       throw error;
     } finally {
       setIsLoading(false);
@@ -280,8 +284,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         setError('Failed to update profile. Please try again.');
       }
-    } catch (error: any) {
-      setError(error.message || 'Failed to update profile. Please try again.');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update profile. Please try again.';
+      setError(errorMessage);
       throw error;
     } finally {
       setIsLoading(false);
@@ -314,8 +319,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (!response.success) {
         setError('Failed to change password. Please try again.');
       }
-    } catch (error: any) {
-      setError(error.message || 'Failed to change password. Please try again.');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to change password. Please try again.';
+      setError(errorMessage);
       throw error;
     } finally {
       setIsLoading(false);
@@ -350,8 +356,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         setError('Failed to delete account. Please try again.');
       }
-    } catch (error: any) {
-      setError(error.message || 'Failed to delete account. Please try again.');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete account. Please try again.';
+      setError(errorMessage);
       throw error;
     } finally {
       setIsLoading(false);
@@ -359,7 +366,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Add or update address function
-  const addOrUpdateAddress = async (address: any) => {
+  const addOrUpdateAddress = async (address: Address) => {
     setIsLoading(true);
     setError(null);
     
@@ -402,8 +409,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         setError('Failed to update address. Please try again.');
       }
-    } catch (error: any) {
-      setError(error.message || 'Failed to update address. Please try again.');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update address. Please try again.';
+      setError(errorMessage);
       throw error;
     } finally {
       setIsLoading(false);
@@ -453,8 +461,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         setError('Failed to delete address. Please try again.');
       }
-    } catch (error: any) {
-      setError(error.message || 'Failed to delete address. Please try again.');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete address. Please try again.';
+      setError(errorMessage);
       throw error;
     } finally {
       setIsLoading(false);

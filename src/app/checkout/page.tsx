@@ -102,7 +102,7 @@ export default function CheckoutPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          cartId: cart.id,
+          cartId: cart._id,
           email: user?.email || '',
           shippingAddress,
           billingAddress,
@@ -137,12 +137,16 @@ export default function CheckoutPage() {
     if (!cart) return null;
     
     const summaryItems = cart.items.map(item => ({
-      id: item.id,
+      id: item._id,
       name: item.product.name,
       price: item.price / item.quantity,
       quantity: item.quantity,
       image: item.product.images?.[0] || '',
-      customizations: item.customizations,
+      customizations: {
+        scent: item.customizations.scent ? { name: item.customizations.scent } : undefined,
+        color: item.customizations.color ? { name: item.customizations.color } : undefined,
+        size: item.customizations.size ? { name: item.customizations.size } : undefined,
+      },
     }));
     
     return (

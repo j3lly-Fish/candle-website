@@ -5,7 +5,8 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import errorHandler from './middleware/errorHandler';
 import { notFoundHandler } from './middleware/notFoundHandler';
-import mongoose, { connectDB, dbEvents, getConnectionStateString, getDatabaseStats } from './config/database';
+import mongoose from 'mongoose';
+import { connectDB, dbEvents, getConnectionStateString, getDatabaseStats } from './config/database';
 import { createIndexes } from './utils/dbUtils';
 import { getConnectionStatus, registerDbEventHandlers } from './utils/dbConnection';
 
@@ -39,26 +40,7 @@ const initializeServer = async () => {
     await createIndexes();
     
     // Register database event handlers
-    registerDbEventHandlers({
-      onError: (error) => {
-        console.error('Database connection error:', error);
-      },
-      onDisconnected: () => {
-        console.warn('Database disconnected. Attempting to reconnect...');
-        // Attempt to reconnect if disconnected unexpectedly
-        setTimeout(() => {
-          connectDB().catch(err => {
-            console.error('Failed to reconnect to database:', err);
-          });
-        }, 5000);
-      },
-      onReconnected: () => {
-        console.log('Database reconnected successfully');
-      },
-      onConnectionFailed: (error) => {
-        console.error('Database connection failed:', error);
-      }
-    });
+    registerDbEventHandlers();
     
     // Start server only after successful database connection
     const server = app.listen(PORT, () => {
@@ -78,7 +60,7 @@ const initializeServer = async () => {
       server.close(async () => {
         console.log('HTTP server closed');
         try {
-          await mongoose.disconnect();
+          await mongoose.connection.close();
           console.log('MongoDB connection closed');
           process.exit(0);
         } catch (err) {

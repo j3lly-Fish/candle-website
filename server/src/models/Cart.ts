@@ -122,13 +122,13 @@ CartSchema.statics.findOrCreateCart = async function(userId: mongoose.Types.Obje
   let cart;
   
   if (userId) {
-    cart = await this.findByUser(userId);
+    cart = await this.findOne({ user: userId });
     if (!cart) {
       cart = new this({ user: userId, items: [], totalPrice: 0 });
       await cart.save();
     }
   } else if (sessionId) {
-    cart = await this.findByGuestId(sessionId);
+    cart = await this.findOne({ sessionId: sessionId, user: null });
     if (!cart) {
       cart = new this({ sessionId: sessionId, items: [], totalPrice: 0 });
       await cart.save();

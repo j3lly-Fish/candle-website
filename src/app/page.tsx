@@ -41,7 +41,9 @@ export default function Home() {
                         key={color} 
                         className="w-8 h-8 rounded-full cursor-pointer border-2 border-neutral-light hover:border-accent transition-colors duration-300" 
                         style={{ backgroundColor: color }}
-                      />
+                      >
+                        <div />
+                      </TransitionElement>
                     ))}
                   </div>
                 </div>

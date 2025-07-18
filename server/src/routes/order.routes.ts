@@ -7,7 +7,7 @@ import {
   getOrderByOrderNumber,
   updateOrderTracking
 } from '../controllers/order.controller';
-import { authMiddleware } from '../middleware/authMiddleware';
+import { protect } from '../middleware/authMiddleware';
 
 const router = Router();
 
@@ -23,7 +23,7 @@ router.post('/', createOrder);
  * @desc    Get user orders
  * @access  Private
  */
-router.get('/', authMiddleware, getUserOrders);
+router.get('/', protect, getUserOrders);
 
 /**
  * @route   GET /api/orders/track/:orderNumber
@@ -37,20 +37,20 @@ router.get('/track/:orderNumber', getOrderByOrderNumber);
  * @desc    Get order by ID
  * @access  Private
  */
-router.get('/:id', authMiddleware, getOrderById);
+router.get('/:id', protect, getOrderById);
 
 /**
  * @route   PUT /api/orders/:id/status
  * @desc    Update order status
  * @access  Private/Admin
  */
-router.put('/:id/status', authMiddleware, updateOrderStatus);
+router.put('/:id/status', protect, updateOrderStatus);
 
 /**
  * @route   PUT /api/orders/:id/tracking
  * @desc    Update order tracking information
  * @access  Private/Admin
  */
-router.put('/:id/tracking', authMiddleware, updateOrderTracking);
+router.put('/:id/tracking', protect, updateOrderTracking);
 
 export default router;

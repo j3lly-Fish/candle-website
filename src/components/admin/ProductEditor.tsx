@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { FiPlus, FiX, FiSave, FiTrash } from 'react-icons/fi';
@@ -92,7 +94,7 @@ const ProductEditor: React.FC<ProductEditorProps> = ({ productId, initialData })
       setProduct({
         ...product,
         [parent]: {
-          ...product[parent as keyof ProductData],
+          ...(product[parent as keyof ProductData] as object),
           [child]: type === 'number' ? parseFloat(value) : value,
         },
       });
@@ -873,5 +875,7 @@ const ProductEditor: React.FC<ProductEditorProps> = ({ productId, initialData })
     </div>
   );
 };
+
+export default ProductEditor;
 
 export default ProductEditor;

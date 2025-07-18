@@ -62,17 +62,20 @@ export const validateCheckout = async (req: Request, res: Response) => {
       valid: inventoryValidation.valid && addressValidation.valid,
       cart: {
         id: cart._id,
-        items: cart.items.map(item => ({
-          id: item._id,
-          product: {
-            id: item.product._id,
-            name: item.product.name,
-            price: item.price / item.quantity
-          },
-          quantity: item.quantity,
-          customizations: item.customizations,
-          price: item.price
-        })),
+        items: cart.items.map(item => {
+          const product = item.product as any; // Type assertion for populated product
+          return {
+            id: item._id,
+            product: {
+              id: product._id,
+              name: product.name,
+              price: item.price / item.quantity
+            },
+            quantity: item.quantity,
+            customizations: item.customizations,
+            price: item.price
+          };
+        }),
         totalItems: cart.items.reduce((total, item) => total + item.quantity, 0)
       },
       pricing: {
@@ -83,11 +86,10 @@ export const validateCheckout = async (req: Request, res: Response) => {
       },
       inventoryValidation: !inventoryValidation.valid ? {
         valid: false,
-        invalidItems: inventoryValidation.invalidItems
+        errors: inventoryValidation.errors
       } : undefined,
       addressValidation: !addressValidation.valid ? {
-        valid: false,
-        errors: addressValidation.errors
+        valid: false
       } : undefined
     });
   } catch (error) {
@@ -242,7 +244,7 @@ export const processCheckout = async (req: Request, res: Response) => {
       return res.status(400).json({
         success: false,
         message: 'Some items are out of stock',
-        invalidItems: inventoryValidation.invalidItems
+        errors: inventoryValidation.errors
       });
     }
 

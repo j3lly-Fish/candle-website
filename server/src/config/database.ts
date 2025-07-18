@@ -121,7 +121,7 @@ export async function getDatabaseStats(): Promise<{
     
     for (const collection of collections) {
       try {
-        const collectionStats = await db.collection(collection.name).stats();
+        const collectionStats = await db.command({ collStats: collection.name });
         totalDocuments += collectionStats.count || 0;
         totalIndexes += collectionStats.nindexes || 0;
         totalIndexSize += collectionStats.totalIndexSize || 0;

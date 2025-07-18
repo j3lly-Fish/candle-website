@@ -131,7 +131,7 @@ export interface Order {
 // Order item model
 export interface OrderItem {
   product: Product;
-  productSnapshot: any; // Snapshot of product at time of purchase
+  productSnapshot: Product; // Snapshot of product at time of purchase
   quantity: number;
   customizations: {
     scent?: CustomizationOption;

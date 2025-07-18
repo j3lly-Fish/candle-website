@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { FiUsers, FiPackage, FiShoppingCart, FiDollarSign, FiTrendingUp } from 'react-icons/fi';
 import { useAuth } from '@/contexts/AuthContext';
@@ -39,7 +40,7 @@ interface LowStockProduct {
 
 const AdminDashboard = () => {
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const { user, isLoading: loading } = useAuth();
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
   const [lowStockProducts, setLowStockProducts] = useState<LowStockProduct[]>([]);
@@ -200,7 +201,7 @@ const AdminDashboard = () => {
                   <FiDollarSign className="h-6 w-6" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Today's Revenue</p>
+                  <p className="text-sm font-medium text-gray-500">Today&apos;s Revenue</p>
                   <p className="text-2xl font-semibold text-gray-900">
                     {formatCurrency(metrics?.todayRevenue || 0)}
                   </p>
@@ -279,7 +280,7 @@ const AdminDashboard = () => {
                     recentOrders.map((order) => (
                       <tr key={order._id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
-                          <a href={`/admin/orders/${order._id}`}>{order.orderNumber}</a>
+                          <Link href={`/admin/orders/${order._id}`}>{order.orderNumber}</Link>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {order.user ? `${order.user.firstName} ${order.user.lastName}` : 'Guest'}
@@ -312,12 +313,12 @@ const AdminDashboard = () => {
               </table>
             </div>
             <div className="px-6 py-4 border-t border-gray-200">
-              <a
+              <Link
                 href="/admin/orders"
                 className="text-sm font-medium text-red-700 hover:text-red-800"
               >
                 View all orders →
-              </a>
+              </Link>
             </div>
           </motion.div>
 
@@ -360,7 +361,7 @@ const AdminDashboard = () => {
                     lowStockProducts.map((product) => (
                       <tr key={product._id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
-                          <a href={`/admin/products/${product._id}`}>{product.name}</a>
+                          <Link href={`/admin/products/${product._id}`}>{product.name}</Link>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           <span
@@ -389,12 +390,12 @@ const AdminDashboard = () => {
               </table>
             </div>
             <div className="px-6 py-4 border-t border-gray-200">
-              <a
+              <Link
                 href="/admin/products"
                 className="text-sm font-medium text-red-700 hover:text-red-800"
               >
                 View all products →
-              </a>
+              </Link>
             </div>
           </motion.div>
         </div>

@@ -33,7 +33,7 @@ interface Pagination {
 
 const AdminOrders = () => {
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const { user, isLoading: loading } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [pagination, setPagination] = useState<Pagination>({
     total: 0,

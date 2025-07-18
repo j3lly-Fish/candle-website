@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import Order from '../models/Order';
 import Cart from '../models/Cart';
 import { validateOrderAddresses } from '../utils/addressValidator';
-import { sendOrderConfirmationEmail, sendOrderStatusUpdateEmail } from '../utils/emailService';
+import { sendOrderConfirmation } from '../utils/emailService';
 
 /**
  * Create a new order
@@ -75,7 +75,7 @@ export const createOrder = async (req: Request, res: Response) => {
       return res.status(400).json({
         success: false,
         message: 'Some items are out of stock',
-        invalidItems: inventoryValidation.invalidItems
+        errors: inventoryValidation.errors
       });
     }
 
@@ -109,7 +109,7 @@ export const createOrder = async (req: Request, res: Response) => {
     
     // Send order confirmation email
     try {
-      await sendOrderConfirmationEmail(order);
+      await sendOrderConfirmation(order.email, order);
     } catch (emailError) {
       console.error('Failed to send order confirmation email:', emailError);
       // Don't fail the request if email sending fails
@@ -361,7 +361,7 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
         // If a custom notification message was provided, we could add it to the order object
         // before sending the email, but our current email template doesn't support this
         // If we wanted to support custom messages, we would need to modify the email template
-        await sendOrderStatusUpdateEmail(order);
+        await sendOrderConfirmation(order.email, order);
       } catch (emailError) {
         console.error('Failed to send order status update email:', emailError);
         // Don't fail the request if email sending fails
@@ -628,7 +628,7 @@ export const updateOrderTracking = async (req: Request, res: Response) => {
     // Send order status update email if requested and status changed
     if (sendNotification && statusChanged) {
       try {
-        await sendOrderStatusUpdateEmail(order);
+        await sendOrderConfirmation(order.email, order);
       } catch (emailError) {
         console.error('Failed to send order status update email:', emailError);
         // Don't fail the request if email sending fails

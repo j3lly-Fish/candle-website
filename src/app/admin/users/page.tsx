@@ -28,7 +28,7 @@ interface Pagination {
 
 const AdminUsers = () => {
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const { user, isLoading: loading } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [pagination, setPagination] = useState<Pagination>({
     total: 0,
