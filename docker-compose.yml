@@ -1,0 +1,204 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:6.0
+    container_name: candle-ecommerce-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: adminpassword
+      MONGO_INITDB_DATABASE: candle-ecommerce
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./server/scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - candle-network
+
+  # Backend API Server
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: candle-ecommerce-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      MONGODB_URI: mongodb://admin:adminpassword@mongodb:27017/candle-ecommerce?authSource=admin
+      JWT_SECRET: your_jwt_secret_change_in_production
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-your_stripe_secret_key}
+      EMAIL_HOST: ${EMAIL_HOST:-smtp.example.com}
+      EMAIL_PORT: ${EMAIL_PORT:-587}
+      EMAIL_USER: ${EMAIL_USER:-user@example.com}
+      EMAIL_PASSWORD: ${EMAIL_PASSWORD:-password}
+      EMAIL_FROM: ${EMAIL_FROM:-Candle E-commerce <noreply@example.com>}
+      EMAIL_SECURE: ${EMAIL_SECURE:-false}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./server/logs:/app/logs
+      - ./server/uploads:/app/uploads
+    depends_on:
+      - mongodb
+    networks:
+      - candle-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend Next.js Application
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: candle-ecommerce-frontend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-your_stripe_publishable_key}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - candle-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: candle-ecommerce-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - candle-network
+
+  # Redis for Session Storage and Caching
+  redis:
+    image: redis:7-alpine
+    container_name: candle-ecommerce-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - candle-network
+    command: redis-server --appendonly yes
+
+  # Prometheus for Metrics Collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: candle-ecommerce-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.enable-lifecycle'
+    networks:
+      - candle-network
+
+  # Grafana for Metrics Visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: candle-ecommerce-grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: false
+      GF_INSTALL_PLUGINS: grafana-piechart-panel
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    depends_on:
+      - prometheus
+    networks:
+      - candle-network
+
+  # Node Exporter for System Metrics
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: candle-ecommerce-node-exporter
+    restart: unless-stopped
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - candle-network
+
+  # Backup Service
+  backup:
+    build:
+      context: ./backup
+      dockerfile: Dockerfile
+    container_name: candle-ecommerce-backup
+    restart: unless-stopped
+    environment:
+      MONGODB_URI: mongodb://admin:adminpassword@mongodb:27017/candle-ecommerce?authSource=admin
+      BACKUP_SCHEDULE: "0 2 * * *"  # Daily at 2 AM
+      RETENTION_DAYS: 14
+    volumes:
+      - ./backups:/backups
+      - backup_scripts:/app/scripts
+    depends_on:
+      - mongodb
+    networks:
+      - candle-network
+
+volumes:
+  mongodb_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  nginx_logs:
+    driver: local
+  backup_scripts:
+    driver: local
+
+networks:
+  candle-network:
+    driver: bridge

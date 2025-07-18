@@ -1,0 +1,109 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  frontend-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run linting
+      run: npm run lint
+      
+    - name: Run frontend tests
+      run: npm run test:ci
+      
+    - name: Build frontend
+      run: npm run ci:build
+      
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      with:
+        name: frontend-test-results
+        path: |
+          coverage/junit/
+          coverage/lcov-report/
+      
+    - name: Cache build artifacts
+      uses: actions/cache@v3
+      with:
+        path: .next
+        key: ${{ runner.os }}-nextjs-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-nextjs-
+
+  backend-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: 'server/package-lock.json'
+    
+    - name: Install dependencies
+      run: cd server && npm ci
+      
+    - name: Run backend linting and tests
+      run: cd server && npm run ci:verify
+      
+    - name: Build backend
+      run: cd server && npm run build
+      
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      with:
+        name: backend-test-results
+        path: |
+          server/coverage/junit/
+          server/coverage/lcov-report/
+
+  deploy:
+    needs: [frontend-tests, backend-tests]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+    
+    - name: Restore cached build artifacts
+      uses: actions/cache@v3
+      with:
+        path: .next
+        key: ${{ runner.os }}-nextjs-${{ github.sha }}
+        
+    # Set up SSH for deployment
+    - name: Install SSH key
+      uses: shimataro/ssh-key-action@v2
+      with:
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        known_hosts: ${{ secrets.KNOWN_HOSTS }}
+        
+    # Deploy using the deployment script
+    - name: Deploy to production
+      run: |
+        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd ${{ secrets.PROJECT_PATH }} && ./scripts/deploy.sh"
