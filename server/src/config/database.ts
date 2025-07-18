@@ -98,7 +98,11 @@ export function getConnectionStateString(): string {
 export async function getDatabaseStats(): Promise<{
   collections: number;
   documents: number;
+  views: number;
+  objects: number;
+  avgObjSize: number;
   indexes: number;
+  indexSize: number;
   dataSize: number;
   storageSize: number;
 }> {
@@ -113,17 +117,28 @@ export async function getDatabaseStats(): Promise<{
     
     let totalDocuments = 0;
     let totalIndexes = 0;
+    let totalIndexSize = 0;
     
     for (const collection of collections) {
-      const collectionStats = await db.collection(collection.name).stats();
-      totalDocuments += collectionStats.count || 0;
-      totalIndexes += collectionStats.nindexes || 0;
+      try {
+        const collectionStats = await db.collection(collection.name).stats();
+        totalDocuments += collectionStats.count || 0;
+        totalIndexes += collectionStats.nindexes || 0;
+        totalIndexSize += collectionStats.totalIndexSize || 0;
+      } catch (err) {
+        // Skip collections that can't be accessed
+        console.warn(`Could not get stats for collection ${collection.name}:`, err);
+      }
     }
 
     return {
       collections: collections.length,
       documents: totalDocuments,
+      views: stats.views || 0,
+      objects: stats.objects || totalDocuments,
+      avgObjSize: stats.avgObjSize || 0,
       indexes: totalIndexes,
+      indexSize: totalIndexSize,
       dataSize: stats.dataSize || 0,
       storageSize: stats.storageSize || 0,
     };
@@ -132,7 +147,11 @@ export async function getDatabaseStats(): Promise<{
     return {
       collections: 0,
       documents: 0,
+      views: 0,
+      objects: 0,
+      avgObjSize: 0,
       indexes: 0,
+      indexSize: 0,
       dataSize: 0,
       storageSize: 0,
     };

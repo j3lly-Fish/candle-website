@@ -3,7 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
-import { errorHandler } from './middleware/errorHandler';
+import errorHandler from './middleware/errorHandler';
 import { notFoundHandler } from './middleware/notFoundHandler';
 import mongoose, { connectDB, dbEvents, getConnectionStateString, getDatabaseStats } from './config/database';
 import { createIndexes } from './utils/dbUtils';

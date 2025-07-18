@@ -55,6 +55,11 @@ export interface IOrder extends Document {
   updatedAt: Date;
 }
 
+// Define static methods interface
+export interface IOrderModel extends mongoose.Model<IOrder> {
+  validateInventory(items: any[]): Promise<{ valid: boolean; errors?: string[] }>;
+}
+
 // Define the schema for Order
 const OrderSchema: Schema = new Schema(
   {
@@ -241,7 +246,35 @@ OrderSchema.pre('save', async function (next) {
   next();
 });
 
+// Static method to validate inventory
+OrderSchema.statics.validateInventory = async function(items: any[]) {
+  const errors: string[] = [];
+  
+  for (const item of items) {
+    try {
+      const Product = mongoose.model('Product');
+      const product = await Product.findById(item.product);
+      
+      if (!product) {
+        errors.push(`Product ${item.product} not found`);
+        continue;
+      }
+      
+      if (product.inventory < item.quantity) {
+        errors.push(`Insufficient inventory for product ${product.name}. Available: ${product.inventory}, Requested: ${item.quantity}`);
+      }
+    } catch (error) {
+      errors.push(`Error validating product ${item.product}: ${error}`);
+    }
+  }
+  
+  return {
+    valid: errors.length === 0,
+    errors: errors.length > 0 ? errors : undefined
+  };
+};
+
 // Create and export the Order model
-const Order = mongoose.model<IOrder>('Order', OrderSchema);
+const Order = mongoose.model<IOrder, IOrderModel>('Order', OrderSchema);
 
 export default Order;

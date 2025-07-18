@@ -11,11 +11,13 @@ export interface IProduct extends Document {
   name: string;
   description: string;
   price: number;
+  basePrice: number;
   discountPrice?: number;
   images: string[];
   category: string;
   tags: string[];
   stock: number;
+  inventory: number;
   customizationOptions: {
     scents: mongoose.Types.ObjectId[];
     colors: mongoose.Types.ObjectId[];
@@ -45,6 +47,11 @@ const ProductSchema: Schema = new Schema(
       required: [true, 'Product price is required'],
       min: [0, 'Price cannot be negative'],
     },
+    basePrice: {
+      type: Number,
+      required: [true, 'Product base price is required'],
+      min: [0, 'Base price cannot be negative'],
+    },
     discountPrice: {
       type: Number,
       min: [0, 'Discount price cannot be negative'],
@@ -65,6 +72,12 @@ const ProductSchema: Schema = new Schema(
       type: Number,
       required: [true, 'Product stock is required'],
       min: [0, 'Stock cannot be negative'],
+      default: 0,
+    },
+    inventory: {
+      type: Number,
+      required: [true, 'Product inventory is required'],
+      min: [0, 'Inventory cannot be negative'],
       default: 0,
     },
     customizationOptions: {

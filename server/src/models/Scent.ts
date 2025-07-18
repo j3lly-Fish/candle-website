@@ -14,6 +14,9 @@ export interface IScent extends Document {
   intensity: number;
   image: string;
   active: boolean;
+  available: boolean;
+  inStock: boolean;
+  additionalPrice: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -49,6 +52,19 @@ const ScentSchema: Schema = new Schema(
     active: {
       type: Boolean,
       default: true,
+    },
+    available: {
+      type: Boolean,
+      default: true,
+    },
+    inStock: {
+      type: Boolean,
+      default: true,
+    },
+    additionalPrice: {
+      type: Number,
+      default: 0,
+      min: [0, 'Additional price cannot be negative'],
     },
   },
   {

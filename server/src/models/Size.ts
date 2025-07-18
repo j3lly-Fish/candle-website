@@ -18,7 +18,10 @@ export interface ISize extends Document {
   weightOz: number;
   burnTimeHours: number;
   priceModifier: number;
+  additionalPrice: number;
   active: boolean;
+  available: boolean;
+  inStock: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -69,7 +72,20 @@ const SizeSchema: Schema = new Schema(
       required: [true, 'Price modifier is required'],
       default: 0,
     },
+    additionalPrice: {
+      type: Number,
+      default: 0,
+      min: [0, 'Additional price cannot be negative'],
+    },
     active: {
+      type: Boolean,
+      default: true,
+    },
+    available: {
+      type: Boolean,
+      default: true,
+    },
+    inStock: {
       type: Boolean,
       default: true,
     },

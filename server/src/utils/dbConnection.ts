@@ -86,9 +86,11 @@ export async function getConnectionStatus(): Promise<{
   isConnected: boolean;
   readyState: number;
   readyStateString: string;
+  state: string;
   host?: string;
   port?: number;
   name?: string;
+  latency?: number;
 }> {
   const readyState = mongoose.connection.readyState;
   const readyStateMap = {
@@ -98,13 +100,17 @@ export async function getConnectionStatus(): Promise<{
     3: 'disconnecting',
   };
 
+  const state = readyStateMap[readyState as keyof typeof readyStateMap] || 'unknown';
+
   return {
     isConnected: readyState === 1,
     readyState,
-    readyStateString: readyStateMap[readyState as keyof typeof readyStateMap] || 'unknown',
+    readyStateString: state,
+    state: state,
     host: mongoose.connection.host,
     port: mongoose.connection.port,
     name: mongoose.connection.name,
+    latency: 0, // Could implement actual latency measurement if needed
   };
 }
 
