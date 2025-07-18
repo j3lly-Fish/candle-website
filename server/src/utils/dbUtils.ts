@@ -93,3 +93,28 @@ export function handleDatabaseError(error: any): { message: string; code: number
 export async function isDatabaseConnected(): Promise<boolean> {
   return mongoose.connection.readyState === 1;
 }
+
+/**
+ * Create database indexes for all models
+ * @returns Promise that resolves when all indexes are created
+ */
+export async function createIndexes(): Promise<void> {
+  try {
+    console.log('Creating database indexes...');
+    
+    // Get all registered models
+    const models = mongoose.models;
+    
+    // Create indexes for each model
+    for (const modelName in models) {
+      const model = models[modelName];
+      console.log(`Creating indexes for ${modelName}...`);
+      await model.createIndexes();
+    }
+    
+    console.log('Database indexes created successfully!');
+  } catch (error) {
+    console.error('Error creating database indexes:', error);
+    throw error;
+  }
+}

@@ -8,7 +8,7 @@ WORKDIR /app
 
 # Install dependencies based on the preferred package manager
 COPY package.json package-lock.json* ./
-RUN npm ci --only=production
+RUN npm ci
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -31,10 +31,12 @@ RUN adduser --system --uid 1001 expressjs
 # Install curl for health checks
 RUN apk add --no-cache curl
 
+# Copy package.json and install only production dependencies
+COPY --from=builder --chown=expressjs:nodejs /app/package.json ./package.json
+RUN npm ci --only=production && npm cache clean --force
+
 # Copy the built application
 COPY --from=builder --chown=expressjs:nodejs /app/dist ./dist
-COPY --from=builder --chown=expressjs:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=expressjs:nodejs /app/package.json ./package.json
 
 # Create directories for logs and uploads
 RUN mkdir -p logs uploads

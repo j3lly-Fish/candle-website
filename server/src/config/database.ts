@@ -4,6 +4,7 @@
  * This module provides configuration settings for the MongoDB database.
  */
 
+import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 
 // Load environment variables
@@ -49,3 +50,100 @@ const dbConfig = {
 };
 
 export default dbConfig;
+
+/**
+ * Connect to MongoDB database
+ */
+export async function connectDB(): Promise<typeof mongoose> {
+  try {
+    const connection = await mongoose.connect(dbConfig.uri, dbConfig.options);
+    console.log('MongoDB connected successfully');
+    return connection;
+  } catch (error) {
+    console.error('MongoDB connection error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Disconnect from MongoDB database
+ */
+export async function disconnectDB(): Promise<void> {
+  try {
+    await mongoose.disconnect();
+    console.log('MongoDB disconnected successfully');
+  } catch (error) {
+    console.error('MongoDB disconnection error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get connection state as string
+ */
+export function getConnectionStateString(): string {
+  const state = mongoose.connection.readyState;
+  const stateMap = {
+    0: 'disconnected',
+    1: 'connected',
+    2: 'connecting',
+    3: 'disconnecting',
+  };
+  return stateMap[state as keyof typeof stateMap] || 'unknown';
+}
+
+/**
+ * Get database statistics
+ */
+export async function getDatabaseStats(): Promise<{
+  collections: number;
+  documents: number;
+  indexes: number;
+  dataSize: number;
+  storageSize: number;
+}> {
+  try {
+    const db = mongoose.connection.db;
+    if (!db) {
+      throw new Error('Database connection not available');
+    }
+
+    const stats = await db.stats();
+    const collections = await db.listCollections().toArray();
+    
+    let totalDocuments = 0;
+    let totalIndexes = 0;
+    
+    for (const collection of collections) {
+      const collectionStats = await db.collection(collection.name).stats();
+      totalDocuments += collectionStats.count || 0;
+      totalIndexes += collectionStats.nindexes || 0;
+    }
+
+    return {
+      collections: collections.length,
+      documents: totalDocuments,
+      indexes: totalIndexes,
+      dataSize: stats.dataSize || 0,
+      storageSize: stats.storageSize || 0,
+    };
+  } catch (error) {
+    console.error('Error getting database stats:', error);
+    return {
+      collections: 0,
+      documents: 0,
+      indexes: 0,
+      dataSize: 0,
+      storageSize: 0,
+    };
+  }
+}
+
+/**
+ * Database event handlers
+ */
+export const dbEvents = {
+  connected: () => console.log('MongoDB connected'),
+  error: (err: Error) => console.error('MongoDB error:', err),
+  disconnected: () => console.log('MongoDB disconnected'),
+};

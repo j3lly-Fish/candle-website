@@ -78,3 +78,57 @@ export async function disconnectFromDatabase(): Promise<void> {
     process.exit(1);
   }
 }
+
+/**
+ * Get current database connection status
+ */
+export async function getConnectionStatus(): Promise<{
+  isConnected: boolean;
+  readyState: number;
+  readyStateString: string;
+  host?: string;
+  port?: number;
+  name?: string;
+}> {
+  const readyState = mongoose.connection.readyState;
+  const readyStateMap = {
+    0: 'disconnected',
+    1: 'connected',
+    2: 'connecting',
+    3: 'disconnecting',
+  };
+
+  return {
+    isConnected: readyState === 1,
+    readyState,
+    readyStateString: readyStateMap[readyState as keyof typeof readyStateMap] || 'unknown',
+    host: mongoose.connection.host,
+    port: mongoose.connection.port,
+    name: mongoose.connection.name,
+  };
+}
+
+/**
+ * Register database event handlers
+ */
+export function registerDbEventHandlers(): void {
+  mongoose.connection.on('connected', () => {
+    console.log('MongoDB connected successfully');
+    isConnected = true;
+  });
+
+  mongoose.connection.on('error', (err) => {
+    console.error('MongoDB connection error:', err);
+    isConnected = false;
+  });
+
+  mongoose.connection.on('disconnected', () => {
+    console.warn('MongoDB disconnected');
+    isConnected = false;
+  });
+
+  mongoose.connection.on('reconnected', () => {
+    console.log('MongoDB reconnected');
+    isConnected = true;
+  });
+}
