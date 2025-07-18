@@ -7,8 +7,8 @@ RUN apk add --no-cache libc6-compat curl
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
-COPY package.json package-lock.json* ./
-RUN npm ci
+COPY package.json ./
+RUN npm install
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -33,7 +33,7 @@ RUN apk add --no-cache curl
 
 # Copy package.json and install only production dependencies
 COPY --from=builder --chown=expressjs:nodejs /app/package.json ./package.json
-RUN npm ci --only=production && npm cache clean --force
+RUN npm install --production && npm cache clean --force
 
 # Copy the built application
 COPY --from=builder --chown=expressjs:nodejs /app/dist ./dist
