@@ -35,21 +35,6 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Calculate total item count
   const itemCount = cart?.items.reduce((total, item) => total + item.quantity, 0) || 0;
 
-  // Fetch cart on initial load and when user changes
-  useEffect(() => {
-    fetchCart();
-  }, [user, fetchCart]);
-  
-  // Check if user just logged in and needs to merge carts
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      const guestCartId = getLocalStorageItem<string | null>(GUEST_CART_ID_KEY, null);
-      if (guestCartId) {
-        mergeGuestCart();
-      }
-    }
-  }, [isAuthenticated, user, mergeGuestCart]);
-
   // Fetch cart data
   const fetchCart = useCallback(async () => {
     try {
@@ -67,6 +52,48 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setIsLoading(false);
     }
   }, [isAuthenticated]);
+
+  // Merge guest cart with user cart
+  const mergeGuestCart = useCallback(async () => {
+    try {
+      const guestCartId = getLocalStorageItem<string | null>(GUEST_CART_ID_KEY, null);
+      
+      if (!guestCartId || !isAuthenticated) {
+        return;
+      }
+      
+      setIsLoading(true);
+      
+      // Call the merge API endpoint
+      const payload: MergeCartPayload = { guestId: guestCartId };
+      const response = await api.post<CartResponse>(API_ENDPOINTS.cart.merge, payload);
+      
+      // Update cart with merged result
+      setCart(response.data);
+      
+      // Remove guest cart ID from localStorage after successful merge
+      removeLocalStorageItem(GUEST_CART_ID_KEY);
+    } catch (error) {
+      console.error('Error merging carts:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isAuthenticated]);
+
+  // Fetch cart on initial load and when user changes
+  useEffect(() => {
+    fetchCart();
+  }, [fetchCart]);
+  
+  // Check if user just logged in and needs to merge carts
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      const guestCartId = getLocalStorageItem<string | null>(GUEST_CART_ID_KEY, null);
+      if (guestCartId) {
+        mergeGuestCart();
+      }
+    }
+  }, [isAuthenticated, user, mergeGuestCart]);
 
   // Add item to cart
   const addToCart = async (payload: AddToCartPayload) => {
@@ -132,33 +159,6 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setIsLoading(false);
     }
   };
-  
-  // Merge guest cart with user cart
-  const mergeGuestCart = useCallback(async () => {
-    try {
-      const guestCartId = getLocalStorageItem<string | null>(GUEST_CART_ID_KEY, null);
-      
-      if (!guestCartId || !isAuthenticated) {
-        return;
-      }
-      
-      setIsLoading(true);
-      
-      // Call the merge API endpoint
-      const payload: MergeCartPayload = { guestId: guestCartId };
-      const response = await api.post<CartResponse>(API_ENDPOINTS.cart.merge, payload);
-      
-      // Update cart with merged result
-      setCart(response.data);
-      
-      // Remove guest cart ID from localStorage after successful merge
-      removeLocalStorageItem(GUEST_CART_ID_KEY);
-    } catch (error) {
-      console.error('Error merging carts:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [isAuthenticated]);
 
   // Cart drawer controls
   const openCart = () => setIsCartOpen(true);

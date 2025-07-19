@@ -174,7 +174,7 @@ const ProductsPage: React.FC = () => {
     // Update the specific filter
     switch (filterType) {
       case 'categories':
-        if (value.length > 0) {
+        if (Array.isArray(value) && value.length > 0) {
           params.set('categories', value.join(','));
         } else {
           params.delete('categories');
@@ -182,7 +182,7 @@ const ProductsPage: React.FC = () => {
         break;
         
       case 'tags':
-        if (value.length > 0) {
+        if (Array.isArray(value) && value.length > 0) {
           params.set('tags', value.join(','));
         } else {
           params.delete('tags');
@@ -190,16 +190,18 @@ const ProductsPage: React.FC = () => {
         break;
         
       case 'price':
-        if (value[0] > 0) {
-          params.set('minPrice', value[0].toString());
-        } else {
-          params.delete('minPrice');
-        }
-        
-        if (value[1] > 0) {
-          params.set('maxPrice', value[1].toString());
-        } else {
-          params.delete('maxPrice');
+        if (Array.isArray(value) && value.length === 2 && typeof value[0] === 'number' && typeof value[1] === 'number') {
+          if (value[0] > 0) {
+            params.set('minPrice', value[0].toString());
+          } else {
+            params.delete('minPrice');
+          }
+          
+          if (value[1] > 0) {
+            params.set('maxPrice', value[1].toString());
+          } else {
+            params.delete('maxPrice');
+          }
         }
         break;
         

@@ -18,6 +18,11 @@ import type { AddressFormData } from '@/components/checkout/AddressForm';
 import type { PaymentFormData } from '@/components/checkout/PaymentForm';
 import type { ShippingOption } from '@/components/checkout/ShippingOptions';
 
+// Extended payment data type that includes Stripe payment intent ID
+interface ExtendedPaymentFormData extends PaymentFormData {
+  stripePaymentIntentId?: string;
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { cart, clearCart } = useCart();
@@ -27,7 +32,7 @@ export default function CheckoutPage() {
   const [shippingAddress, setShippingAddress] = useState<AddressFormData | null>(null);
   const [billingAddress, setBillingAddress] = useState<AddressFormData | null>(null);
   const [sameAsShipping, setSameAsShipping] = useState(true);
-  const [paymentDetails, setPaymentDetails] = useState<PaymentFormData | null>(null);
+  const [paymentDetails, setPaymentDetails] = useState<ExtendedPaymentFormData | null>(null);
   const [selectedShippingOption, setSelectedShippingOption] = useState('standard');
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);

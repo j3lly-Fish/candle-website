@@ -88,19 +88,6 @@ const AdminOrderDetailClient: React.FC<AdminOrderDetailClientProps> = ({ orderId
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Check if user is admin
-    if (!loading && user) {
-      if (user.role !== 'admin') {
-        router.push('/');
-      } else {
-        fetchOrder();
-      }
-    } else if (!loading && !user) {
-      router.push('/account/login');
-    }
-  }, [user, loading, router, fetchOrder]);
-
   const fetchOrder = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -126,6 +113,19 @@ const AdminOrderDetailClient: React.FC<AdminOrderDetailClientProps> = ({ orderId
       setIsLoading(false);
     }
   }, [orderId]);
+
+  useEffect(() => {
+    // Check if user is admin
+    if (!loading && user) {
+      if (user.role !== 'admin') {
+        router.push('/');
+      } else {
+        fetchOrder();
+      }
+    } else if (!loading && !user) {
+      router.push('/account/login');
+    }
+  }, [user, loading, router, fetchOrder]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {

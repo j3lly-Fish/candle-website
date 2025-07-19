@@ -46,19 +46,6 @@ const AdminUsers = () => {
   const [showModal, setShowModal] = useState(false);
   const [modalAction, setModalAction] = useState<'activate' | 'deactivate' | null>(null);
 
-  useEffect(() => {
-    // Check if user is admin
-    if (!loading && user) {
-      if (user.role !== 'admin') {
-        router.push('/');
-      } else {
-        fetchUsers(1);
-      }
-    } else if (!loading && !user) {
-      router.push('/account/login');
-    }
-  }, [user, loading, router, fetchUsers]);
-
   const fetchUsers = useCallback(async (page: number) => {
     try {
       setIsLoading(true);
@@ -93,6 +80,19 @@ const AdminUsers = () => {
       setIsLoading(false);
     }
   }, [search, role]);
+
+  useEffect(() => {
+    // Check if user is admin
+    if (!loading && user) {
+      if (user.role !== 'admin') {
+        router.push('/');
+      } else {
+        fetchUsers(1);
+      }
+    } else if (!loading && !user) {
+      router.push('/account/login');
+    }
+  }, [user, loading, router, fetchUsers]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

@@ -47,19 +47,6 @@ const AdminProducts = () => {
   const [deleteProductId, setDeleteProductId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  useEffect(() => {
-    // Check if user is admin
-    if (!loading && user) {
-      if (user.role !== 'admin') {
-        router.push('/');
-      } else {
-        fetchProducts(1);
-      }
-    } else if (!loading && !user) {
-      router.push('/account/login');
-    }
-  }, [user, loading, router, fetchProducts]);
-
   const fetchProducts = useCallback(async (page: number) => {
     try {
       setIsLoading(true);
@@ -95,6 +82,19 @@ const AdminProducts = () => {
       setIsLoading(false);
     }
   }, [search, category, featured]);
+
+  useEffect(() => {
+    // Check if user is admin
+    if (!loading && user) {
+      if (user.role !== 'admin') {
+        router.push('/');
+      } else {
+        fetchProducts(1);
+      }
+    } else if (!loading && !user) {
+      router.push('/account/login');
+    }
+  }, [user, loading, router, fetchProducts]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

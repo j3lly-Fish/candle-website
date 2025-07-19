@@ -49,19 +49,6 @@ const AdminOrders = () => {
   const [endDate, setEndDate] = useState('');
   const [showFilters, setShowFilters] = useState(false);
 
-  useEffect(() => {
-    // Check if user is admin
-    if (!loading && user) {
-      if (user.role !== 'admin') {
-        router.push('/');
-      } else {
-        fetchOrders(1);
-      }
-    } else if (!loading && !user) {
-      router.push('/account/login');
-    }
-  }, [user, loading, router, fetchOrders]);
-
   const fetchOrders = useCallback(async (page: number) => {
     try {
       setIsLoading(true);
@@ -98,6 +85,19 @@ const AdminOrders = () => {
       setIsLoading(false);
     }
   }, [search, status, startDate, endDate]);
+
+  useEffect(() => {
+    // Check if user is admin
+    if (!loading && user) {
+      if (user.role !== 'admin') {
+        router.push('/');
+      } else {
+        fetchOrders(1);
+      }
+    } else if (!loading && !user) {
+      router.push('/account/login');
+    }
+  }, [user, loading, router, fetchOrders]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

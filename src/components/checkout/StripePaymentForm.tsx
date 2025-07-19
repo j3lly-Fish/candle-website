@@ -194,7 +194,7 @@ export const StripePaymentForm: React.FC<StripeWrapperProps> = ({
   onPaymentSuccess,
   onPaymentError
 }) => {
-  const [stripePromise, setStripePromise] = useState<Promise<unknown> | null>(null);
+  const [stripePromise, setStripePromise] = useState<Promise<import('@stripe/stripe-js').Stripe | null> | null>(null);
   const [clientSecret, setClientSecret] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -203,8 +203,8 @@ export const StripePaymentForm: React.FC<StripeWrapperProps> = ({
     // Load Stripe
     const loadStripeInstance = async () => {
       try {
-        const stripe = await getStripe();
-        setStripePromise(stripe);
+        const stripePromiseInstance = getStripe();
+        setStripePromise(stripePromiseInstance);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load Stripe');
       }
