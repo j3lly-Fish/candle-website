@@ -55,7 +55,7 @@ interface ScrollAnimationOptions {
  * );
  */
 export const useScrollAnimation = ({
-  animationClass,
+  animationClass: _animationClass,
   threshold = 0.1,
   once = true,
   rootMargin = '0px',

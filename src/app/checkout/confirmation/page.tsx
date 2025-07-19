@@ -111,7 +111,7 @@ export default function OrderConfirmationPage() {
               </div>
               <h1 className="text-3xl font-bold text-gray-900">Order Confirmed!</h1>
               <p className="text-gray-600 mt-2">
-                Thank you for your order. We've sent a confirmation email to {order.email}.
+                Thank you for your order. We&apos;ve sent a confirmation email to {order.email}.
               </p>
             </div>
             

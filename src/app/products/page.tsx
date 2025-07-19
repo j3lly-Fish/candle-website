@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { ProductGrid, ProductFilters, ProductSort } from '@/components/product';
 import { PageTransition } from '@/components/animation';
@@ -59,8 +59,8 @@ const ProductsPage: React.FC = () => {
   // Get filter values from URL params
   const page = Number(searchParams.get('page') || '1');
   const sort = searchParams.get('sort') || 'createdAt:desc';
-  const selectedCategories = searchParams.get('categories')?.split(',') || [];
-  const selectedTags = searchParams.get('tags')?.split(',') || [];
+  const selectedCategories = useMemo(() => searchParams.get('categories')?.split(',') || [], [searchParams]);
+  const selectedTags = useMemo(() => searchParams.get('tags')?.split(',') || [], [searchParams]);
   const minPrice = Number(searchParams.get('minPrice') || '0');
   const maxPrice = Number(searchParams.get('maxPrice') || '0');
   const inStock = searchParams.get('inStock') === 'true';
@@ -164,10 +164,10 @@ const ProductsPage: React.FC = () => {
     };
     
     fetchProducts();
-  }, [page, sort, selectedCategories, selectedTags, minPrice, maxPrice, inStock, searchQuery]);
+  }, [page, sort, selectedCategories, selectedTags, minPrice, maxPrice, inStock, searchQuery, pagination.limit]);
   
   // Handle filter change
-  const handleFilterChange = (filterType: string, value: any) => {
+  const handleFilterChange = (filterType: string, value: string[] | [number, number] | boolean) => {
     // Create new URLSearchParams object from current params
     const params = new URLSearchParams(searchParams.toString());
     

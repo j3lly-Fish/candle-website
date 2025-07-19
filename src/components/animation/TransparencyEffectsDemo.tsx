@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { GlassMorphism, TransparentOverlay } from '@/components/animation';
 
 /**
@@ -19,7 +18,7 @@ const TransparencyEffectsDemo: React.FC = () => {
           {['default', 'light', 'dark', 'frosted', 'maroon', 'red', 'card', 'overlay', 'button', 'tooltip'].map((preset) => (
             <GlassMorphism
               key={preset}
-              preset={preset as any}
+              preset={preset as 'default' | 'light' | 'dark' | 'frosted' | 'maroon' | 'red' | 'card' | 'overlay' | 'button' | 'tooltip'}
               className="p-4 flex items-center justify-center"
               hoverEffect={true}
             >
@@ -145,7 +144,9 @@ const TransparencyEffectsDemo: React.FC = () => {
             gradientOverlay 
             gradientColors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.7)']} 
             gradientDirection="bottom"
-          />
+          >
+            <div />
+          </TransparentOverlay>
           
           <div className="absolute top-4 left-4">
             <GlassMorphism

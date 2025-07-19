@@ -10,7 +10,7 @@ interface HeroProps {
 
 export const Hero = ({ className = '' }: HeroProps) => {
   // Animation variants for the hero title
-  const titleVariants = {
+  const _titleVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
@@ -20,7 +20,7 @@ export const Hero = ({ className = '' }: HeroProps) => {
     },
   };
 
-  const letterVariants = {
+  const _letterVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
       opacity: 1,
@@ -32,7 +32,7 @@ export const Hero = ({ className = '' }: HeroProps) => {
   };
 
   // Split text for letter animation
-  const titleWords = ['Custom', 'Candles', 'Handcrafted', 'For', 'You'];
+  const _titleWords = ['Custom', 'Candles', 'Handcrafted', 'For', 'You'];
 
   return (
     <section className={`container-custom py-16 md:py-24 ${className}`}>

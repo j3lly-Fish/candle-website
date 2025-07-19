@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useAuth } from '@/contexts/AuthContext';
@@ -60,9 +60,9 @@ const AdminOrders = () => {
     } else if (!loading && !user) {
       router.push('/account/login');
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, fetchOrders]);
 
-  const fetchOrders = async (page: number) => {
+  const fetchOrders = useCallback(async (page: number) => {
     try {
       setIsLoading(true);
       
@@ -97,7 +97,7 @@ const AdminOrders = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [search, status, startDate, endDate]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

@@ -184,7 +184,7 @@ export const StaggeredList = ({
     const items = Array.isArray(children) ? children : [children];
     
     // Create a motion component with hover and click effects
-    const createMotionItem = (child: ReactNode, index: number, customVariants?: any) => {
+    const createMotionItem = (child: ReactNode, index: number, customVariants?: typeof itemVariants) => {
       return (
         <motion.div 
           key={index} 
@@ -238,7 +238,7 @@ export const StaggeredList = ({
     return items.map((child, index) => createMotionItem(child, index));
   };
 
-  const ChildTag = childTag === 'li' ? motion.li : motion.div;
+  const _ChildTag = childTag === 'li' ? motion.li : motion.div;
 
   return (
     <motion.div

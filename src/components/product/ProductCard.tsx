@@ -71,7 +71,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, priority = false }) 
             gradientColors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.1)']} 
             gradientDirection="bottom"
             className="pointer-events-none"
-          />
+          >
+            <div />
+          </TransparentOverlay>
           
           {/* Category Tag with glass effect */}
           <GlassMorphism

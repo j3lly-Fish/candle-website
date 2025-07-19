@@ -58,7 +58,7 @@ const ForgotPasswordForm: React.FC = () => {
           </svg>
           <h3 className="mt-2 text-xl font-medium text-gray-900">Check your email</h3>
           <p className="mt-1 text-sm text-gray-600">
-            We've sent a password reset link to {email}
+            We&apos;ve sent a password reset link to {email}
           </p>
           <div className="mt-6">
             <Link
@@ -84,7 +84,7 @@ const ForgotPasswordForm: React.FC = () => {
       )}
       
       <p className="text-gray-600 mb-6">
-        Enter your email address and we'll send you a link to reset your password.
+        Enter your email address and we&apos;ll send you a link to reset your password.
       </p>
       
       <form onSubmit={handleSubmit} className="space-y-6">

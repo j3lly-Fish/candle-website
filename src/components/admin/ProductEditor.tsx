@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FiPlus, FiX, FiSave, FiTrash } from 'react-icons/fi';
 import { motion } from 'framer-motion';
@@ -246,7 +246,7 @@ const ProductEditor: React.FC<ProductEditorProps> = ({ productId, initialData })
         throw new Error(errorData.message || 'Failed to save product');
       }
 
-      const data = await response.json();
+      const _data = await response.json();
       setSuccess(isEditMode ? 'Product updated successfully' : 'Product created successfully');
       
       // Redirect after a short delay
@@ -767,7 +767,7 @@ const ProductEditor: React.FC<ProductEditorProps> = ({ productId, initialData })
                         type="text"
                         value={newSize.dimensions}
                         onChange={(e) => setNewSize({ ...newSize, dimensions: e.target.value })}
-                        placeholder="e.g. 3\" x 4\""
+                        placeholder="e.g. 3&quot; x 4&quot;"
                         className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500"
                       />
                     </div>
@@ -875,7 +875,5 @@ const ProductEditor: React.FC<ProductEditorProps> = ({ productId, initialData })
     </div>
   );
 };
-
-export default ProductEditor;
 
 export default ProductEditor;

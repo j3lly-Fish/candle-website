@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { GlassMorphism } from '@/components/animation';
 
 interface PriceDisplayProps {
@@ -49,7 +48,7 @@ const PriceDisplay: React.FC<PriceDisplayProps> = ({
   return (
     <div className="flex items-center space-x-2">
       <GlassMorphism
-        preset={preset}
+        preset={preset as "default" | "button" | "overlay" | "maroon" | "red" | "tooltip" | "light" | "dark" | "frosted" | "card"}
         opacity={variant === 'default' ? 0.1 : 0.2}
         blurAmount={3}
         hoverEffect={true}

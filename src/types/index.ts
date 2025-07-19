@@ -15,6 +15,7 @@ export interface User {
 
 // Address model
 export interface Address {
+  id: string;
   type: string;
   street: string;
   city: string;

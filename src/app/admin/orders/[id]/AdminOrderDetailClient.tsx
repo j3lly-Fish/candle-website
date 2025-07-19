@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminLayout from '@/components/admin/AdminLayout';
 import OrderStatusUpdate from '@/components/admin/OrderStatusUpdate';
@@ -99,9 +99,9 @@ const AdminOrderDetailClient: React.FC<AdminOrderDetailClientProps> = ({ orderId
     } else if (!loading && !user) {
       router.push('/account/login');
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, fetchOrder]);
 
-  const fetchOrder = async () => {
+  const fetchOrder = useCallback(async () => {
     try {
       setIsLoading(true);
       
@@ -125,7 +125,7 @@ const AdminOrderDetailClient: React.FC<AdminOrderDetailClientProps> = ({ orderId
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [orderId]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {

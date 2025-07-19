@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
-import { ReactNode, Children, isValidElement, cloneElement } from 'react';
+import { ReactNode, Children, isValidElement } from 'react';
 
 interface FadeInSectionProps {
   children: ReactNode;
@@ -68,10 +68,10 @@ export const FadeInSection = ({
   staggerDelay = 0.1,
   rootMargin = '0px',
   cascade = false,
-  amount = 0.5,
-  damping = 12,
+  amount: _amount = 0.5,
+  damping: _damping = 12,
   childClassName = '',
-  childrenAs = 'div',
+  childrenAs: _childrenAs = 'div',
   onViewportEnter,
   onViewportLeave,
 }: FadeInSectionProps) => {
@@ -162,16 +162,15 @@ export const FadeInSection = ({
       
       // For cascade effect, use custom variants with index
       if (cascade) {
-        const MotionElement = motion[childrenAs as keyof typeof motion];
         return (
-          <MotionElement
+          <motion.div
             key={index}
             custom={index}
             variants={cascadeVariants}
             className={`stagger-item ${childClassName}`}
           >
             {child}
-          </MotionElement>
+          </motion.div>
         );
       }
       

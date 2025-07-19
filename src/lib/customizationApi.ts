@@ -1,4 +1,4 @@
-import { CustomizationOption, ScentOption, ColorOption, SizeOption } from '@/types';
+import { ScentOption, ColorOption, SizeOption } from '@/types';
 
 /**
  * Interface for customization combination

@@ -1,8 +1,8 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { api, API_ENDPOINTS } from '../lib/api';
-import { Cart, CartItem, AddToCartPayload, UpdateCartItemPayload, CartResponse, MergeCartPayload } from '../types/cart';
+import { Cart, AddToCartPayload, UpdateCartItemPayload, CartResponse, MergeCartPayload } from '../types/cart';
 import { useAuth } from './AuthContext';
 import { getLocalStorageItem, setLocalStorageItem, removeLocalStorageItem } from '../utils/localStorage';
 
@@ -38,7 +38,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Fetch cart on initial load and when user changes
   useEffect(() => {
     fetchCart();
-  }, [user]);
+  }, [user, fetchCart]);
   
   // Check if user just logged in and needs to merge carts
   useEffect(() => {
@@ -48,10 +48,10 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         mergeGuestCart();
       }
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, mergeGuestCart]);
 
   // Fetch cart data
-  const fetchCart = async () => {
+  const fetchCart = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await api.get<CartResponse>(API_ENDPOINTS.cart.get);
@@ -66,7 +66,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isAuthenticated]);
 
   // Add item to cart
   const addToCart = async (payload: AddToCartPayload) => {
@@ -134,7 +134,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
   
   // Merge guest cart with user cart
-  const mergeGuestCart = async () => {
+  const mergeGuestCart = useCallback(async () => {
     try {
       const guestCartId = getLocalStorageItem<string | null>(GUEST_CART_ID_KEY, null);
       
@@ -158,7 +158,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isAuthenticated]);
 
   // Cart drawer controls
   const openCart = () => setIsCartOpen(true);

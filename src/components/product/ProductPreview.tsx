@@ -23,7 +23,7 @@ export default function ProductPreview({
   color,
   size
 }: ProductPreviewProps) {
-  const [previewUrl, setPreviewUrl] = useState<string>(baseImage);
+  const [_previewUrl, setPreviewUrl] = useState<string>(baseImage);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 

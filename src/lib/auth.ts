@@ -69,7 +69,7 @@ export async function verifyAuth(req: NextRequest): Promise<AuthResult> {
         token,
         status: 200
       };
-    } catch (error) {
+    } catch (_error) {
       return {
         success: false,
         error: 'Invalid or expired token',

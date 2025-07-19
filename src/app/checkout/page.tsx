@@ -8,7 +8,6 @@ import {
   CheckoutLayout, 
   CheckoutStepper, 
   AddressForm, 
-  PaymentForm, 
   OrderSummary,
   ShippingOptions,
   StripePaymentForm
@@ -79,11 +78,7 @@ export default function CheckoutPage() {
     setBillingAddress(data);
   };
   
-  // Handle payment submission
-  const handlePaymentSubmit = (data: PaymentFormData) => {
-    setPaymentDetails(data);
-    setCurrentStep('review');
-  };
+
   
   // Handle order submission
   const handlePlaceOrder = async () => {
@@ -205,7 +200,7 @@ export default function CheckoutPage() {
                       expiryYear: 'XXXX',
                       cvv: 'XXX',
                       stripePaymentIntentId: paymentIntentId
-                    } as PaymentFormData & { stripePaymentIntentId: string });
+                    });
                     setCurrentStep('review');
                   }}
                   onPaymentError={(errorMessage) => {

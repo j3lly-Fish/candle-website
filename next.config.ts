@@ -31,6 +31,27 @@ const nextConfig: NextConfig = {
       allowedOrigins: ['localhost:3000', '127.0.0.1:3000'],
     },
   },
+  // Webpack configuration to exclude server directory
+  webpack: (config, { isServer }) => {
+    // Exclude server directory from client-side builds
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+        crypto: false,
+      };
+    }
+    
+    // Exclude server directory from all builds
+    config.externals = config.externals || [];
+    config.externals.push({
+      mongoose: 'mongoose',
+    });
+    
+    return config;
+  },
 };
 
 export default nextConfig;

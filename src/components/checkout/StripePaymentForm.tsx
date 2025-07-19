@@ -84,7 +84,7 @@ const StripePaymentFormContent: React.FC<StripePaymentFormProps> = ({
     }
   };
 
-  const handleCardChange = (event: any) => {
+  const handleCardChange = (event: { complete: boolean; error?: { message: string } }) => {
     setCardComplete(event.complete);
     setError(event.error ? event.error.message : null);
   };
@@ -194,7 +194,7 @@ export const StripePaymentForm: React.FC<StripeWrapperProps> = ({
   onPaymentSuccess,
   onPaymentError
 }) => {
-  const [stripePromise, setStripePromise] = useState<any>(null);
+  const [stripePromise, setStripePromise] = useState<Promise<unknown> | null>(null);
   const [clientSecret, setClientSecret] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

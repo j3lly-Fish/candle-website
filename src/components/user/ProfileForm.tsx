@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { User, Address } from '@/types';
+import { Address } from '@/types';
 
 const ProfileForm: React.FC = () => {
   const { user, updateProfile, addOrUpdateAddress, deleteAddress, error, clearError, isLoading } = useAuth();
@@ -17,6 +17,7 @@ const ProfileForm: React.FC = () => {
   const [isAddingAddress, setIsAddingAddress] = useState(false);
   const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
   const [addressForm, setAddressForm] = useState<Address>({
+    id: '',
     type: 'home',
     street: '',
     city: '',
@@ -118,6 +119,7 @@ const ProfileForm: React.FC = () => {
       setIsAddingAddress(false);
       setEditingAddressId(null);
       setAddressForm({
+        id: '',
         type: 'home',
         street: '',
         city: '',
@@ -246,8 +248,8 @@ const ProfileForm: React.FC = () => {
                 onClick={() => {
                   setIsEditing(false);
                   setFormData({
-                    firstName: user.firstName,
-                    lastName: user.lastName,
+                    firstName: user?.firstName || '',
+                    lastName: user?.lastName || '',
                   });
                   setFormErrors({});
                 }}
@@ -261,15 +263,15 @@ const ProfileForm: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <p className="text-sm text-gray-500">First Name</p>
-              <p className="font-medium">{user.firstName}</p>
+              <p className="font-medium">{user?.firstName}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Last Name</p>
-              <p className="font-medium">{user.lastName}</p>
+              <p className="font-medium">{user?.lastName}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Email</p>
-              <p className="font-medium">{user.email}</p>
+              <p className="font-medium">{user?.email}</p>
             </div>
           </div>
         )}
@@ -285,6 +287,7 @@ const ProfileForm: React.FC = () => {
                 setIsAddingAddress(true);
                 setEditingAddressId(null);
                 setAddressForm({
+                  id: '',
                   type: 'home',
                   street: '',
                   city: '',
@@ -441,9 +444,9 @@ const ProfileForm: React.FC = () => {
           </form>
         ) : (
           <div>
-            {user.addresses && user.addresses.length > 0 ? (
+            {user?.addresses && user.addresses.length > 0 ? (
               <div className="space-y-4">
-                {user.addresses.map((address) => (
+                {user?.addresses?.map((address) => (
                   <div key={address.id} className="border border-gray-200 rounded-md p-4">
                     <div className="flex justify-between items-start">
                       <div>

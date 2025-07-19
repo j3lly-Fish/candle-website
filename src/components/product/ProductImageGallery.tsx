@@ -58,7 +58,9 @@ export default function ProductImageGallery({ images, productName }: ProductImag
               gradientDirection="bottom"
               opacity={0.1}
               className="pointer-events-none"
-            />
+            >
+              <div />
+            </TransparentOverlay>
           </motion.div>
         </AnimatePresence>
         
@@ -108,8 +110,8 @@ export default function ProductImageGallery({ images, productName }: ProductImag
               hoverEffect={true}
               hoverScale={1.1}
               borderRadius="9999px"
-              onClick={(e: React.MouseEvent) => {
-                e.stopPropagation();
+              onClick={(e?: React.MouseEvent) => {
+                e?.stopPropagation();
                 setSelectedImage((prev) => (prev === 0 ? displayImages.length - 1 : prev - 1));
               }}
             >
@@ -132,8 +134,8 @@ export default function ProductImageGallery({ images, productName }: ProductImag
               hoverEffect={true}
               hoverScale={1.1}
               borderRadius="9999px"
-              onClick={(e: React.MouseEvent) => {
-                e.stopPropagation();
+              onClick={(e?: React.MouseEvent) => {
+                e?.stopPropagation();
                 setSelectedImage((prev) => (prev === displayImages.length - 1 ? 0 : prev + 1));
               }}
             >

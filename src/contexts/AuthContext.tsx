@@ -1,10 +1,16 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { User, Address } from '@/types';
-import { api, API_ENDPOINTS } from '@/lib/api';
+import { api, API_ENDPOINTS, ApiException } from '@/lib/api';
+import { 
+  tokenStorage, 
+  loginRateLimiter, 
+  passwordValidation, 
+  csrfProtection 
+} from '@/lib/auth-security';
 
-// Define the shape of the authentication context
+// Enhanced authentication context interface with production features
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
@@ -21,6 +27,11 @@ interface AuthContextType {
   deleteAddress: (addressId: string) => Promise<void>;
   error: string | null;
   clearError: () => void;
+  // Production-ready additions
+  validatePassword: (password: string) => { isValid: boolean; errors: string[] };
+  isRateLimited: (email: string) => boolean;
+  getRemainingLockoutTime: (email: string) => number;
+  refreshToken: () => Promise<void>;
 }
 
 // Register data interface
@@ -50,10 +61,10 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-// Local storage keys
-const TOKEN_KEY = 'candleAuth_token';
-const REFRESH_TOKEN_KEY = 'candleAuth_refreshToken';
-const USER_KEY = 'candleAuth_user';
+// Local storage keys (kept for reference but using tokenStorage)
+const _TOKEN_KEY = 'candleAuth_token';
+const _REFRESH_TOKEN_KEY = 'candleAuth_refreshToken';
+const _USER_KEY = 'candleAuth_user';
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -63,14 +74,56 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Check if user is authenticated
   const isAuthenticated = !!user;
 
-  // Initialize auth state from local storage
+  // Clear authentication data using secure storage
+  const clearAuthData = useCallback(() => {
+    tokenStorage.removeToken();
+    tokenStorage.removeRefreshToken();
+    // Clear user data from memory
+    setUser(null);
+  }, []);
+
+  // Token refresh mechanism
+  const refreshToken = useCallback(async () => {
+    try {
+      const refreshTokenValue = tokenStorage.getRefreshToken();
+      if (!refreshTokenValue) {
+        throw new Error('No refresh token available');
+      }
+
+      const response = await api.post<AuthResponse>(
+        API_ENDPOINTS.auth.refreshToken,
+        { refreshToken: refreshTokenValue },
+        {
+          headers: {
+            ...csrfProtection.getHeaders(),
+          },
+        }
+      );
+
+      if (response.success) {
+        tokenStorage.setToken(response.data.token);
+        if (response.data.refreshToken) {
+          tokenStorage.setRefreshToken(response.data.refreshToken);
+        }
+        setUser(response.data.user);
+      } else {
+        // Refresh failed, clear auth data
+        clearAuthData();
+        throw new Error('Token refresh failed');
+      }
+    } catch (error) {
+      clearAuthData();
+      throw error;
+    }
+  }, [clearAuthData]);
+
+  // Initialize auth state with production-ready token handling
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        const storedUser = localStorage.getItem(USER_KEY);
-        const token = localStorage.getItem(TOKEN_KEY);
+        const token = tokenStorage.getToken();
         
-        if (storedUser && token) {
+        if (token) {
           // Validate token by fetching user profile
           try {
             const response = await api.get<{ success: boolean; data: { user: User } }>(
@@ -78,6 +131,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               {
                 headers: {
                   Authorization: `Bearer ${token}`,
+                  ...csrfProtection.getHeaders(),
                 },
               }
             );
@@ -85,12 +139,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             if (response.success) {
               setUser(response.data.user);
             } else {
-              // Token is invalid, clear storage
-              clearAuthData();
+              // Token is invalid, try to refresh
+              try {
+                await refreshToken();
+              } catch {
+                clearAuthData();
+              }
             }
           } catch (error) {
-            console.error('Error validating token:', error);
-            clearAuthData();
+            // Try to refresh token on error
+            try {
+              await refreshToken();
+            } catch {
+              console.error('Error validating token:', error);
+              clearAuthData();
+            }
           }
         } else {
           clearAuthData();
@@ -104,64 +167,98 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     initializeAuth();
-  }, []);
+  }, [refreshToken, clearAuthData]);
 
-  // Clear authentication data
-  const clearAuthData = () => {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
-    setUser(null);
-  };
-
-  // Save authentication data
-  const saveAuthData = (user: User, token: string, refreshToken?: string) => {
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
-    localStorage.setItem(TOKEN_KEY, token);
+  // Save authentication data using secure storage
+  const saveAuthData = useCallback((user: User, token: string, refreshToken?: string) => {
+    tokenStorage.setToken(token);
     if (refreshToken) {
-      localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+      tokenStorage.setRefreshToken(refreshToken);
     }
     setUser(user);
-  };
+  }, []);
 
-  // Login function
+  // Production-ready login function with rate limiting and security
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     setError(null);
     
     try {
+      // Check rate limiting
+      if (loginRateLimiter.isBlocked(email)) {
+        const remainingTime = Math.ceil(loginRateLimiter.getRemainingLockoutTime(email) / 1000 / 60);
+        setError(`Too many failed attempts. Please try again in ${remainingTime} minutes.`);
+        return;
+      }
+
+      // Validate password strength for new registrations
+      const passwordCheck = passwordValidation.validate(password);
+      if (!passwordCheck.isValid) {
+        setError('Password does not meet security requirements.');
+        return;
+      }
+
       const response = await api.post<AuthResponse>(
         API_ENDPOINTS.auth.login,
-        { email, password }
+        { email, password },
+        {
+          headers: {
+            ...csrfProtection.getHeaders(),
+          },
+        }
       );
       
       if (response.success) {
+        // Record successful login
+        loginRateLimiter.recordAttempt(email, true);
+        
         saveAuthData(
           response.data.user,
           response.data.token,
           response.data.refreshToken
         );
       } else {
+        // Record failed login
+        loginRateLimiter.recordAttempt(email, false);
         setError('Login failed. Please check your credentials.');
       }
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Login failed. Please try again.';
-      setError(errorMessage);
+      // Record failed login attempt
+      loginRateLimiter.recordAttempt(email, false);
+      
+      if (error instanceof ApiException) {
+        setError(error.message);
+      } else {
+        const errorMessage = error instanceof Error ? error.message : 'Login failed. Please try again.';
+        setError(errorMessage);
+      }
       throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Register function
+  // Production-ready register function with validation
   const register = async (userData: RegisterData) => {
     setIsLoading(true);
     setError(null);
     
     try {
+      // Validate password strength
+      const passwordCheck = passwordValidation.validate(userData.password);
+      if (!passwordCheck.isValid) {
+        setError(`Password requirements: ${passwordCheck.errors.join(', ')}`);
+        return;
+      }
+
       const response = await api.post<AuthResponse>(
         API_ENDPOINTS.auth.register,
-        userData
+        userData,
+        {
+          headers: {
+            ...csrfProtection.getHeaders(),
+          },
+        }
       );
       
       if (response.success) {
@@ -174,21 +271,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setError('Registration failed. Please try again.');
       }
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Registration failed. Please try again.';
-      setError(errorMessage);
+      if (error instanceof ApiException) {
+        setError(error.message);
+      } else {
+        const errorMessage = error instanceof Error ? error.message : 'Registration failed. Please try again.';
+        setError(errorMessage);
+      }
       throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Logout function
+  // Production-ready logout function
   const logout = async () => {
     setIsLoading(true);
     setError(null);
     
     try {
-      const token = localStorage.getItem(TOKEN_KEY);
+      const token = tokenStorage.getToken();
       
       if (token) {
         await api.post(
@@ -197,6 +298,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           {
             headers: {
               Authorization: `Bearer ${token}`,
+              ...csrfProtection.getHeaders(),
             },
           }
         );
@@ -218,7 +320,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await api.post(
         API_ENDPOINTS.auth.forgotPassword,
         { email }
-      );
+      ) as { success: boolean; data?: { message: string }; message?: string };
       
       if (!response.success) {
         setError('Failed to send password reset email. Please try again.');
@@ -241,7 +343,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await api.post(
         API_ENDPOINTS.auth.resetPassword,
         { token, newPassword }
-      );
+      ) as { success: boolean; data?: { message: string }; message?: string };
       
       if (!response.success) {
         setError('Failed to reset password. Please try again.');
@@ -255,13 +357,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Update profile function
+  // Update profile function with secure token handling
   const updateProfile = async (data: Partial<User>) => {
     setIsLoading(true);
     setError(null);
     
     try {
-      const token = localStorage.getItem(TOKEN_KEY);
+      const token = tokenStorage.getToken();
       
       if (!token) {
         setError('You must be logged in to update your profile.');
@@ -274,35 +376,46 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         {
           headers: {
             Authorization: `Bearer ${token}`,
+            ...csrfProtection.getHeaders(),
           },
         }
-      );
+      ) as { success: boolean; data?: { user: User }; message?: string };
       
       if (response.success) {
-        setUser(prevUser => prevUser ? { ...prevUser, ...response.data.user } : null);
-        localStorage.setItem(USER_KEY, JSON.stringify(response.data.user));
+        setUser(prevUser => prevUser ? { ...prevUser, ...response.data?.user } : null);
       } else {
         setError('Failed to update profile. Please try again.');
       }
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to update profile. Please try again.';
-      setError(errorMessage);
+      if (error instanceof ApiException) {
+        setError(error.message);
+      } else {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to update profile. Please try again.';
+        setError(errorMessage);
+      }
       throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Change password function
+  // Change password function with secure token handling and validation
   const changePassword = async (currentPassword: string, newPassword: string) => {
     setIsLoading(true);
     setError(null);
     
     try {
-      const token = localStorage.getItem(TOKEN_KEY);
+      const token = tokenStorage.getToken();
       
       if (!token) {
         setError('You must be logged in to change your password.');
+        return;
+      }
+
+      // Validate new password strength
+      const passwordCheck = passwordValidation.validate(newPassword);
+      if (!passwordCheck.isValid) {
+        setError(`New password requirements: ${passwordCheck.errors.join(', ')}`);
         return;
       }
       
@@ -312,29 +425,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         {
           headers: {
             Authorization: `Bearer ${token}`,
+            ...csrfProtection.getHeaders(),
           },
         }
-      );
+      ) as { success: boolean; data?: { message: string }; message?: string };
       
       if (!response.success) {
         setError('Failed to change password. Please try again.');
       }
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to change password. Please try again.';
-      setError(errorMessage);
+      if (error instanceof ApiException) {
+        setError(error.message);
+      } else {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to change password. Please try again.';
+        setError(errorMessage);
+      }
       throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Delete account function
+  // Delete account function with secure token handling
   const deleteAccount = async (password: string) => {
     setIsLoading(true);
     setError(null);
     
     try {
-      const token = localStorage.getItem(TOKEN_KEY);
+      const token = tokenStorage.getToken();
       
       if (!token) {
         setError('You must be logged in to delete your account.');
@@ -346,10 +464,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         {
           headers: {
             Authorization: `Bearer ${token}`,
+            ...csrfProtection.getHeaders(),
           },
           body: JSON.stringify({ password }),
         }
-      );
+      ) as { success: boolean; data?: { message: string }; message?: string };
       
       if (response.success) {
         clearAuthData();
@@ -357,21 +476,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setError('Failed to delete account. Please try again.');
       }
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to delete account. Please try again.';
-      setError(errorMessage);
+      if (error instanceof ApiException) {
+        setError(error.message);
+      } else {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to delete account. Please try again.';
+        setError(errorMessage);
+      }
       throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Add or update address function
+  // Add or update address function with secure token handling
   const addOrUpdateAddress = async (address: Address) => {
     setIsLoading(true);
     setError(null);
     
     try {
-      const token = localStorage.getItem(TOKEN_KEY);
+      const token = tokenStorage.getToken();
       
       if (!token) {
         setError('You must be logged in to update your address.');
@@ -384,47 +507,42 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         {
           headers: {
             Authorization: `Bearer ${token}`,
+            ...csrfProtection.getHeaders(),
           },
         }
-      );
+      ) as { success: boolean; data?: { addresses: Address[] }; message?: string };
       
       if (response.success) {
         setUser(prevUser => {
           if (!prevUser) return null;
           return {
             ...prevUser,
-            addresses: response.data.addresses,
+            addresses: response.data?.addresses || [],
           };
         });
-        
-        // Update user in local storage
-        const storedUser = localStorage.getItem(USER_KEY);
-        if (storedUser) {
-          const parsedUser = JSON.parse(storedUser);
-          localStorage.setItem(USER_KEY, JSON.stringify({
-            ...parsedUser,
-            addresses: response.data.addresses,
-          }));
-        }
       } else {
         setError('Failed to update address. Please try again.');
       }
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to update address. Please try again.';
-      setError(errorMessage);
+      if (error instanceof ApiException) {
+        setError(error.message);
+      } else {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to update address. Please try again.';
+        setError(errorMessage);
+      }
       throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Delete address function
+  // Delete address function with secure token handling
   const deleteAddress = async (addressId: string) => {
     setIsLoading(true);
     setError(null);
     
     try {
-      const token = localStorage.getItem(TOKEN_KEY);
+      const token = tokenStorage.getToken();
       
       if (!token) {
         setError('You must be logged in to delete an address.');
@@ -436,39 +554,51 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         {
           headers: {
             Authorization: `Bearer ${token}`,
+            ...csrfProtection.getHeaders(),
           },
         }
-      );
+      ) as { success: boolean; data?: { addresses: Address[] }; message?: string };
       
       if (response.success) {
         setUser(prevUser => {
           if (!prevUser) return null;
           return {
             ...prevUser,
-            addresses: response.data.addresses,
+            addresses: response.data?.addresses || [],
           };
         });
-        
-        // Update user in local storage
-        const storedUser = localStorage.getItem(USER_KEY);
-        if (storedUser) {
-          const parsedUser = JSON.parse(storedUser);
-          localStorage.setItem(USER_KEY, JSON.stringify({
-            ...parsedUser,
-            addresses: response.data.addresses,
-          }));
-        }
       } else {
         setError('Failed to delete address. Please try again.');
       }
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to delete address. Please try again.';
-      setError(errorMessage);
+      if (error instanceof ApiException) {
+        setError(error.message);
+      } else {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to delete address. Please try again.';
+        setError(errorMessage);
+      }
       throw error;
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Production-ready password validation
+  const validatePassword = useCallback((password: string) => {
+    return passwordValidation.validate(password);
+  }, []);
+
+  // Rate limiting check
+  const isRateLimited = useCallback((email: string) => {
+    return loginRateLimiter.isBlocked(email);
+  }, []);
+
+  // Get remaining lockout time
+  const getRemainingLockoutTime = useCallback((email: string) => {
+    return loginRateLimiter.getRemainingLockoutTime(email);
+  }, []);
+
+
 
   // Clear error function
   const clearError = () => {
@@ -492,6 +622,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     deleteAddress,
     error,
     clearError,
+    // Production-ready additions
+    validatePassword,
+    isRateLimited,
+    getRemainingLockoutTime,
+    refreshToken,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

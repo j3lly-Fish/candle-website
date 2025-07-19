@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import TransitionElement from '../animation/TransitionElement';
+
 
 interface FilterOption {
   id: string;
@@ -29,7 +29,7 @@ interface ProductFiltersProps {
     price: [number, number];
     inStock: boolean;
   };
-  onFilterChange: (filterType: string, value: any) => void;
+  onFilterChange: (filterType: string, value: string[] | [number, number] | boolean) => void;
   onClearFilters: () => void;
   className?: string;
   isMobile?: boolean;
@@ -41,7 +41,7 @@ interface ProductFiltersProps {
 const ProductFilters: React.FC<ProductFiltersProps> = ({
   categories,
   tags,
-  priceRange,
+  priceRange: _priceRange,
   selectedFilters,
   onFilterChange,
   onClearFilters,
@@ -130,7 +130,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
           <motion.div
             initial={isMobile ? { height: 0, opacity: 0 } : false}
             animate={isMobile ? { height: 'auto', opacity: 1 } : false}
-            exit={isMobile ? { height: 0, opacity: 0 } : false}
+            exit={isMobile ? { height: 0, opacity: 0 } : undefined}
             transition={{ duration: 0.3 }}
             className="overflow-hidden"
           >

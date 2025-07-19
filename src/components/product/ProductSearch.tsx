@@ -314,7 +314,7 @@ const ProductSearch: React.FC<ProductSearchProps> = ({
             transition={{ duration: 0.2 }}
             className="absolute z-50 w-full mt-1 bg-white rounded-md shadow-lg py-4 px-6 text-center"
           >
-            <p className="text-gray-500">No products found for "{query}"</p>
+            <p className="text-gray-500">No products found for &quot;{query}&quot;</p>
             <button
               onClick={() => {
                 router.push(`/products`);

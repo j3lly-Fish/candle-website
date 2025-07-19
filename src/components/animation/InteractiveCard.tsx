@@ -55,7 +55,7 @@ export const InteractiveCard: React.FC<InteractiveCardProps> = ({
   hoverShadowEffect = 'strong',
   duration = 0.2,
   disabled = false,
-  as = 'div',
+  as: _as = 'div',
 }) => {
   // Get shadow based on shadowEffect level
   const getShadow = (effect: 'none' | 'light' | 'medium' | 'strong') => {
@@ -136,10 +136,8 @@ export const InteractiveCard: React.FC<InteractiveCardProps> = ({
     }
   };
 
-  const MotionComponent = motion[as as keyof typeof motion];
-
   return (
-    <MotionComponent
+    <motion.div
       className={`transition-all ${className}`}
       style={baseStyles}
       whileHover={getHoverAnimation()}
@@ -151,7 +149,7 @@ export const InteractiveCard: React.FC<InteractiveCardProps> = ({
       }}
     >
       {children}
-    </MotionComponent>
+    </motion.div>
   );
 };
 

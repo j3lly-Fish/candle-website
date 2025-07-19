@@ -1,6 +1,28 @@
 import { motion, MotionProps } from 'framer-motion';
 import { ReactNode } from 'react';
 
+interface PresetConfig {
+  opacity: number;
+  blurAmount: number;
+  borderOpacity: number;
+  hoverEffect?: boolean;
+  hoverOpacity?: number;
+  hoverBlurAmount?: number;
+  hoverScale?: number;
+  hoverRotate?: number;
+  hoverElevation?: boolean;
+  hoverGlow?: boolean;
+  glowColor?: string;
+  hoverColorShift?: boolean;
+  colorShiftTo?: string;
+  borderRadius?: string;
+  borderWidth?: string;
+  borderColor?: string;
+  boxShadow?: string;
+  clickEffect?: 'none' | 'scale' | 'ripple';
+  clickScale?: number;
+}
+
 interface GlassMorphismProps extends MotionProps {
   children: ReactNode;
   className?: string;
@@ -23,7 +45,7 @@ interface GlassMorphismProps extends MotionProps {
   boxShadow?: string;
   clickEffect?: 'none' | 'scale' | 'ripple';
   clickScale?: number;
-  onClick?: () => void;
+  onClick?: (e?: React.MouseEvent) => void;
   preset?: 'default' | 'light' | 'dark' | 'frosted' | 'maroon' | 'red' | 'card' | 'overlay' | 'button' | 'tooltip';
   backgroundImage?: string;
   backgroundGradient?: boolean;
@@ -91,11 +113,11 @@ export const GlassMorphism = ({
   backgroundImage,
   backgroundGradient = false,
   gradientColors,
-  as = 'div',
+  as: _as = 'div',
   ...motionProps
 }: GlassMorphismProps) => {
   // Define preset configurations
-  const presets = {
+  const presets: Record<string, PresetConfig> = {
     default: {
       opacity: 0.7,
       blurAmount: 10,
@@ -207,22 +229,22 @@ export const GlassMorphism = ({
     opacity: opacity !== undefined ? opacity : selectedPreset.opacity,
     blurAmount: blurAmount !== undefined ? blurAmount : selectedPreset.blurAmount,
     borderOpacity: borderOpacity !== undefined ? borderOpacity : selectedPreset.borderOpacity,
-    hoverEffect: hoverEffect !== undefined ? hoverEffect : selectedPreset.hoverEffect,
-    hoverOpacity: hoverOpacity !== undefined ? hoverOpacity : selectedPreset.hoverOpacity,
-    hoverBlurAmount: hoverBlurAmount !== undefined ? hoverBlurAmount : selectedPreset.hoverBlurAmount,
-    hoverScale: hoverScale !== undefined ? hoverScale : selectedPreset.hoverScale,
-    hoverRotate: hoverRotate !== undefined ? hoverRotate : selectedPreset.hoverRotate,
-    hoverElevation: hoverElevation !== undefined ? hoverElevation : selectedPreset.hoverElevation,
-    hoverGlow: hoverGlow !== undefined ? hoverGlow : selectedPreset.hoverGlow,
-    glowColor: glowColor || selectedPreset.glowColor,
-    hoverColorShift: hoverColorShift !== undefined ? hoverColorShift : selectedPreset.hoverColorShift,
-    colorShiftTo: colorShiftTo || selectedPreset.colorShiftTo,
-    borderRadius: borderRadius || selectedPreset.borderRadius,
-    borderWidth: borderWidth || selectedPreset.borderWidth,
-    borderColor: borderColor || selectedPreset.borderColor,
-    boxShadow: boxShadow || selectedPreset.boxShadow,
-    clickEffect: clickEffect || selectedPreset.clickEffect,
-    clickScale: clickScale !== undefined ? clickScale : selectedPreset.clickScale,
+    hoverEffect: hoverEffect !== undefined ? hoverEffect : selectedPreset.hoverEffect || false,
+    hoverOpacity: hoverOpacity !== undefined ? hoverOpacity : selectedPreset.hoverOpacity || 0.8,
+    hoverBlurAmount: hoverBlurAmount !== undefined ? hoverBlurAmount : selectedPreset.hoverBlurAmount || 20,
+    hoverScale: hoverScale !== undefined ? hoverScale : selectedPreset.hoverScale || 1.05,
+    hoverRotate: hoverRotate !== undefined ? hoverRotate : selectedPreset.hoverRotate || 0,
+    hoverElevation: hoverElevation !== undefined ? hoverElevation : selectedPreset.hoverElevation || false,
+    hoverGlow: hoverGlow !== undefined ? hoverGlow : selectedPreset.hoverGlow || false,
+    glowColor: glowColor || selectedPreset.glowColor || '#ffffff',
+    hoverColorShift: hoverColorShift !== undefined ? hoverColorShift : selectedPreset.hoverColorShift || false,
+    colorShiftTo: colorShiftTo || selectedPreset.colorShiftTo || '#ffffff',
+    borderRadius: borderRadius || selectedPreset.borderRadius || '8px',
+    borderWidth: borderWidth || selectedPreset.borderWidth || '1px',
+    borderColor: borderColor || selectedPreset.borderColor || 'rgba(255, 255, 255, 0.2)',
+    boxShadow: boxShadow || selectedPreset.boxShadow || '0 4px 6px rgba(0, 0, 0, 0.1)',
+    clickEffect: clickEffect || selectedPreset.clickEffect || 'none',
+    clickScale: clickScale !== undefined ? clickScale : selectedPreset.clickScale || 0.95,
   };
 
   // Generate background style
@@ -277,10 +299,8 @@ export const GlassMorphism = ({
     }
   };
 
-  const MotionComponent = motion[as as keyof typeof motion] || motion.div;
-
   return (
-    <MotionComponent
+    <motion.div
       className={`${className} glass-effect`}
       initial={glassStyles}
       whileHover={hoverStyles}
@@ -293,7 +313,7 @@ export const GlassMorphism = ({
       {...motionProps}
     >
       {children}
-    </MotionComponent>
+    </motion.div>
   );
 };
 

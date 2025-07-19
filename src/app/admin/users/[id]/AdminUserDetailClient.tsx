@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useAuth } from '@/contexts/AuthContext';
@@ -64,9 +64,9 @@ const AdminUserDetailClient: React.FC<AdminUserDetailClientProps> = ({ userId })
     } else if (!loading && !user) {
       router.push('/account/login');
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, fetchUserDetails]);
 
-  const fetchUserDetails = async () => {
+  const fetchUserDetails = useCallback(async () => {
     try {
       setIsLoading(true);
       
@@ -91,7 +91,7 @@ const AdminUserDetailClient: React.FC<AdminUserDetailClientProps> = ({ userId })
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [userId]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {

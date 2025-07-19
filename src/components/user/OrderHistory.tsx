@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Order, OrderStatus } from '@/types';
 import { api, API_ENDPOINTS } from '@/lib/api';
 import Link from 'next/link';
-import { formatCurrency } from '@/utils/formatters';
+
 
 const OrderHistory: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
@@ -29,7 +29,7 @@ const OrderHistory: React.FC = () => {
   const [totalPages, setTotalPages] = useState<number>(1);
   const [isFilterVisible, setIsFilterVisible] = useState<boolean>(false);
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     if (!isAuthenticated || !user) {
       setIsLoading(false);
       return;
@@ -104,12 +104,12 @@ const OrderHistory: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isAuthenticated, user, statusFilter, dateRange, priceRange, sortField, sortOrder, currentPage]);
 
   // Fetch orders when filters, sorting, or pagination changes
   useEffect(() => {
     fetchOrders();
-  }, [user, isAuthenticated, statusFilter, dateRange, priceRange, sortField, sortOrder, currentPage]);
+  }, [fetchOrders]);
 
   const getStatusColor = (status: OrderStatus): string => {
     switch (status) {
@@ -387,7 +387,7 @@ const OrderHistory: React.FC = () => {
         </div>
       ) : (
         <div className="text-center py-8">
-          <p className="text-gray-500 mb-4">You haven't placed any orders yet.</p>
+          <p className="text-gray-500 mb-4">You haven&apos;t placed any orders yet.</p>
           <Link
             href="/products"
             className="inline-block bg-maroon text-white py-2 px-4 rounded-md hover:bg-red-700 transition duration-200"

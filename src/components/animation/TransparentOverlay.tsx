@@ -1,6 +1,6 @@
 import React, { ReactNode } from 'react';
 import { motion, MotionProps } from 'framer-motion';
-import GlassMorphism from './GlassMorphism';
+
 
 interface TransparentOverlayProps extends MotionProps {
   children: ReactNode;

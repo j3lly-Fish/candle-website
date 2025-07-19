@@ -245,7 +245,7 @@ const ScrollAnimationDemo: React.FC = () => {
               >
                 <span className="text-maroon cursor-pointer">custom candles</span>
               </TransitionElement>
-              and how they're made.
+              and how they&apos;re made.
             </p>
             <p className="text-sm text-gray-600 mt-3">Text links change color and scale slightly on hover</p>
           </div>

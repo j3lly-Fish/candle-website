@@ -1,7 +1,8 @@
 // API configuration and utilities
+import { env } from '@/utils/env';
 
-// Base API URL
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+// Base API URL with proper environment handling
+export const API_BASE_URL = env.apiUrl;
 
 // Default headers for API requests
 export const DEFAULT_HEADERS = {
@@ -60,29 +61,130 @@ export const API_ENDPOINTS = {
   },
 };
 
-// Generic fetch wrapper with error handling
+// API Error types for better error handling
+export interface ApiError {
+  message: string;
+  status: number;
+  code?: string;
+  details?: unknown;
+}
+
+export class ApiException extends Error {
+  public status: number;
+  public code?: string;
+  public details?: unknown;
+
+  constructor(error: ApiError) {
+    super(error.message);
+    this.name = 'ApiException';
+    this.status = error.status;
+    this.code = error.code;
+    this.details = error.details;
+  }
+}
+
+// Retry configuration
+const RETRY_CONFIG = {
+  maxRetries: 3,
+  retryDelay: 1000, // 1 second
+  retryableStatuses: [408, 429, 500, 502, 503, 504],
+};
+
+// Helper function to wait for a specified time
+const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Generic fetch wrapper with enhanced error handling and retry logic
 export async function fetchApi<T>(
   url: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  retryCount = 0
 ): Promise<T> {
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
     const response = await fetch(url, {
       ...options,
       headers: {
         ...DEFAULT_HEADERS,
         ...options.headers,
       },
+      signal: controller.signal,
     });
 
+    clearTimeout(timeoutId);
+
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'An error occurred');
+      // Try to parse error response
+      let errorData: { message?: string; code?: string; details?: unknown };
+      try {
+        errorData = await response.json();
+      } catch {
+        errorData = { message: response.statusText };
+      }
+
+      const apiError: ApiError = {
+        message: errorData.message || `HTTP ${response.status}: ${response.statusText}`,
+        status: response.status,
+        code: errorData.code,
+        details: errorData.details,
+      };
+
+      // Retry logic for specific status codes
+      if (
+        retryCount < RETRY_CONFIG.maxRetries &&
+        RETRY_CONFIG.retryableStatuses.includes(response.status)
+      ) {
+        const delay = RETRY_CONFIG.retryDelay * Math.pow(2, retryCount); // Exponential backoff
+        await wait(delay);
+        return fetchApi<T>(url, options, retryCount + 1);
+      }
+
+      throw new ApiException(apiError);
     }
 
-    return await response.json();
+    // Handle empty responses
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      return await response.json();
+    } else {
+      return {} as T; // Return empty object for non-JSON responses
+    }
   } catch (error) {
-    console.error('API request failed:', error);
-    throw error;
+    // Handle network errors and timeouts
+    if (error instanceof ApiException) {
+      throw error;
+    }
+
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        throw new ApiException({
+          message: 'Request timeout',
+          status: 408,
+          code: 'TIMEOUT',
+        });
+      }
+
+      // Retry network errors
+      if (retryCount < RETRY_CONFIG.maxRetries) {
+        const delay = RETRY_CONFIG.retryDelay * Math.pow(2, retryCount);
+        await wait(delay);
+        return fetchApi<T>(url, options, retryCount + 1);
+      }
+
+      throw new ApiException({
+        message: error.message || 'Network error occurred',
+        status: 0,
+        code: 'NETWORK_ERROR',
+        details: error,
+      });
+    }
+
+    throw new ApiException({
+      message: 'Unknown error occurred',
+      status: 0,
+      code: 'UNKNOWN_ERROR',
+    });
   }
 }
 

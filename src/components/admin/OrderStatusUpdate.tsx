@@ -8,7 +8,7 @@ interface OrderStatusUpdateProps {
 }
 
 const OrderStatusUpdate: React.FC<OrderStatusUpdateProps> = ({
-  orderId,
+  orderId: _orderId,
   currentStatus,
   onStatusUpdate,
 }) => {

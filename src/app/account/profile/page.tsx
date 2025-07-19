@@ -1,6 +1,4 @@
 import React from 'react';
-import ProfileForm from '@/components/user/ProfileForm';
-import OrderHistory from '@/components/user/OrderHistory';
 import { Metadata } from 'next';
 import ProfileTabs from '@/components/user/ProfileTabs';
 import { PageTransition } from '@/components/animation';

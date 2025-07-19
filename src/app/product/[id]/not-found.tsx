@@ -8,7 +8,7 @@ export default function ProductNotFound() {
       <div className="container mx-auto px-4 py-16 text-center">
         <h1 className="text-4xl font-bold text-gray-900 mb-4">Product Not Found</h1>
         <p className="text-gray-600 mb-8">
-          We couldn't find the product you're looking for. It may have been removed or the URL might be incorrect.
+          We couldn&apos;t find the product you&apos;re looking for. It may have been removed or the URL might be incorrect.
         </p>
         <Link 
           href="/products" 

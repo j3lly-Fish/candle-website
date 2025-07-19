@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 
 interface LoadingSpinnerProps {
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'medium';
   color?: 'primary' | 'secondary' | 'accent';
   className?: string;
 }
@@ -19,6 +19,7 @@ export const LoadingSpinner = ({
     sm: 'w-4 h-4',
     md: 'w-8 h-8',
     lg: 'w-12 h-12',
+    medium: 'w-8 h-8',
   };
 
   const colorClasses = {
